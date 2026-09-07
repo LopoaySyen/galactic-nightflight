@@ -7,10 +7,10 @@ export const metadata: Metadata = {
   ),
   title: "银河夜航",
   description:
-    "在静谧的星空中启程。银河夜航以实测星表和三维模型，让你自由选择观察位置、时间与感光方式。",
+    "同一片银河，不同的星空。银河夜航让你从银河中的不同位置出发，调整时间、晨昏与大气，探索异地的夜空。",
   openGraph: {
     title: "银河夜航",
-    description: "观察实测亮星、银河模型、系外天体与行星大气共同生成的动态内部视点天幕。",
+    description: "如果站在银河另一处的星球上，抬头会看到什么？选择位置、时间与大气，看看那里的星空。",
     type: "website",
     images: [
       {
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "银河夜航",
-    description: "观察实测亮星、银河模型、系外天体与行星大气共同生成的动态内部视点天幕。",
+    description: "如果站在银河另一处的星球上，抬头会看到什么？选择位置、时间与大气，看看那里的星空。",
     images: ["/brand/nightflight-sky.webp"],
   },
   icons: {

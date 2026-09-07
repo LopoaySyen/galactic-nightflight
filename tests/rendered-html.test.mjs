@@ -39,10 +39,12 @@ test("renders content navigation and named feature controls without slideshow ch
   assert.match(html, /class="nf-star-flight"/);
   assert.match(html, /milky-way-6000\.webp 6000w/);
   assert.match(html, /logo-starboat\.webp/);
-  for (const text of ["银河夜航", "空间漫游", "时间推进", "感光与大气", "天体查询", "源码与数据来源", "无需另行授权", "暂停动态效果"]) assert.ok(html.includes(text), text);
+  for (const text of ["银河夜航", "空间漫游", "时间推进", "感光与大气", "天体查询", "同一片银河，", "不同的星空。", "星球上", "无需另行授权", "暂停动态效果"]) assert.ok(html.includes(text), text);
   assert.match(html, /href="\/observe"/);
   assert.match(html, /\/brand\/favicon-nightflight-32\.png/);
-  assert.match(html, /href="\/en"/);
+  assert.match(html, /<a[^>]*aria-label="Switch to English"[^>]*href="\/en"/);
+  assert.match(html, /<a href="\/observe" class="nf-enter"/);
+  assert.match(html, /<a href="\/observe" class="nf-primary"/);
   assert.match(html, /href="https:\/\/github.com\/LopoaySyen\/galactic-nightflight"/);
   assert.match(html, /MIT 许可证/);
   assert.match(html, /aria-label="首页栏目"/);
@@ -59,7 +61,7 @@ test("renders content navigation and named feature controls without slideshow ch
 test("serves a complete English introduction with language navigation", async () => {
   const html = await renderRoute("/en");
   assert.match(html, /<main[^>]*lang="en"/);
-  for (const text of ["Galactic Nightflight", "Page sections", "Explore space", "Move through time", "Light &amp; atmosphere", "Find objects", "Source code and data", "no separate author approval"]) assert.ok(html.includes(text), text);
+  for (const text of ["Galactic Nightflight", "Page sections", "Travel", "Time", "Atmosphere", "Star finder", "One galaxy.", "Countless skies.", "Make this sky your own.", "no separate author approval"]) assert.ok(html.includes(text), text);
   assert.match(html, /href="\/" hrefLang="zh-CN"/i);
   assert.match(html, /aria-label="Explore features"/);
 });

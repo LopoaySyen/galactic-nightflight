@@ -21,14 +21,18 @@ export function NightHomeEffects({ language = 'zh', onSectionChange }: { languag
 
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
     const textureReady = () => { stage.classList.toggle('is-webgl', !!renderer?.hasPhoto()); schedule(); };
-    let renderer = createStarFlight(canvas, textureReady), frame: number | null = null;
+    let renderer: ReturnType<typeof createStarFlight> = null, frame: number | null = null;
     let userPaused = false, previousTime = 0, progress = 0, initialized = false, current = -1;
+    let lastInput = 0, styledProgress = NaN;
     let stops: number[] = [], steeringX = 0, steeringY = 0;
     const inactive = () => userPaused || media.matches || document.hidden;
     const stop = () => { if (frame !== null) cancelAnimationFrame(frame); frame = null; previousTime = 0; };
     const measure = () => { stops = sections.map(section => section.getBoundingClientRect().top + window.scrollY); renderer?.resize(); schedule(); };
     const draw = (time: number) => {
       frame = null;
+      // Keep ambient motion quiet; reserve the faster cadence for interaction.
+      const interval = time - lastInput < 300 ? 1000 / 60 : 1000 / 30;
+      if (!inactive() && renderer && previousTime && time - previousTime < interval - 1) { frame = requestAnimationFrame(draw); return; }
       const elapsed = previousTime ? Math.max(0, Math.min((time - previousTime) / 1000, .05)) : 1 / 60;
       const first = previousTime === 0; previousTime = time;
       const state = sectionTravel(window.scrollY, stops);
@@ -38,19 +42,23 @@ export function NightHomeEffects({ language = 'zh', onSectionChange }: { languag
       const ambientX = inactive() ? 0 : Math.sin(time * .00012) * .055;
       const ambientY = inactive() ? 0 : Math.cos(time * .0001) * .04;
       if (!document.hidden) renderer?.draw(media.matches ? 0 : progress, steeringX + ambientX, steeringY + ambientY, first || inactive());
-      root.style.setProperty('--chapter-progress', String(progress / 3));
-      sections.forEach((section, index) => {
-        const distance = Math.abs(progress - index);
-        section.style.setProperty('--reading-opacity', String(media.matches ? 1 : Math.max(.22, 1 - Math.max(0, distance - .3) * .68)));
-      });
+      if (!Number.isFinite(styledProgress) || Math.abs(progress - styledProgress) > .0001) {
+        root.style.setProperty('--chapter-progress', String(progress / 3));
+        sections.forEach((section, index) => {
+          const distance = Math.abs(progress - index);
+          section.style.setProperty('--reading-opacity', String(media.matches ? 1 : Math.max(.22, 1 - Math.max(0, distance - .3) * .68)));
+        });
+        styledProgress = progress;
+      }
       if (!inactive() && renderer) frame = requestAnimationFrame(draw);
     };
     function schedule() { if (!document.hidden && frame === null) frame = requestAnimationFrame(draw); }
-    const sync = () => { stop(); setReduced(media.matches); root.classList.toggle('nf-motion-paused', userPaused || media.matches); stage.classList.toggle('is-webgl', !!renderer?.hasPhoto()); schedule(); };
+    const sync = () => { stop(); styledProgress = NaN; setReduced(media.matches); root.classList.toggle('nf-motion-paused', userPaused || media.matches); stage.classList.toggle('is-webgl', !!renderer?.hasPhoto()); schedule(); };
     controlRef.current = value => { userPaused = value; sync(); };
-    const scroll = () => { schedule(); };
+    const scroll = () => { lastInput = performance.now(); schedule(); };
     const pointer = (event: PointerEvent) => {
       if (event.pointerType === 'touch' || inactive()) return;
+      lastInput = performance.now();
       steeringX = (event.clientX / window.innerWidth - .5) * .45;
       steeringY = (event.clientY / window.innerHeight - .5) * .35;
     };
@@ -63,7 +71,13 @@ export function NightHomeEffects({ language = 'zh', onSectionChange }: { languag
     document.addEventListener('visibilitychange', sync); media.addEventListener('change', sync);
     canvas.addEventListener('webglcontextlost', lost); canvas.addEventListener('webglcontextrestored', restored);
     measure(); sync();
+    // Hydrate controls and paint the photograph before compiling graphics programs.
+    const startScene = () => { renderer = createStarFlight(canvas, textureReady); sync(); };
+    const idleStart = 'requestIdleCallback' in window ? window.requestIdleCallback(startScene, { timeout: 900 }) : null;
+    const timedStart = idleStart === null ? window.setTimeout(startScene, 120) : null;
     return () => {
+      if (idleStart !== null) window.cancelIdleCallback(idleStart);
+      if (timedStart !== null) window.clearTimeout(timedStart);
       stop(); resize.disconnect(); renderer?.dispose(); controlRef.current = () => {};
       window.removeEventListener('scroll', scroll); window.removeEventListener('resize', measure);
       root.removeEventListener('pointermove', pointer); root.removeEventListener('pointerleave', leave);
