@@ -18,9 +18,9 @@ In your browser · Three-dimensional travel · Observed catalogues and models ·
 
 </div>
 
-[![Actual Galactic Nightflight interface: sky, direction controls, time playback and observation tools](docs/images/observatory.jpg)](https://nightflight.xelope.fun/observe)
+[![Milky Way panorama by ESO/S. Brunier](public/brand/milky-way-1920.webp)](https://nightflight.xelope.fun/en)
 
-<sub>Actual observatory screenshot · Solar neighbourhood · Direction controls on the left; time and observing tools below. Click the feature screenshots below to view them at full size.</sub>
+<sub>Milky Way photograph used on the project homepage · © ESO/S. Brunier · <a href="https://www.eso.org/public/images/eso0932a/">Original image</a> · Creative Commons Attribution 4.0 (CC BY 4.0)</sub>
 
 ---
 
@@ -51,7 +51,7 @@ These screenshots show the current application in use. Observatory controls are 
 
 Open “位置跳转” at the bottom and choose “内银河” (Inner galaxy). The screenshot shows the completed jump: six presets appear on the right, and the observer coordinates have changed at the lower left. Position controls determine where you are; the left-hand direction buttons determine where you look.
 
-[![Position jump: Inner galaxy selected, with updated observer coordinates and sky](docs/images/position-jump.jpg)](docs/images/position-jump.jpg)
+[![Position jump: Inner galaxy selected, with updated observer coordinates and sky](public/guide/position-jump.jpg)](public/guide/position-jump.jpg)
 
 ### Adjust atmosphere and display brightness
 
@@ -70,7 +70,7 @@ Select “搜索天体” on the left and enter “天狼” to find Sirius. Cho
   </tr>
   <tr>
     <td><a href="docs/images/object-search.jpg"><img src="docs/images/object-search.jpg" width="480" alt="Searching for Sirius by its Chinese name returns its catalogue identity" /></a></td>
-    <td><a href="docs/images/star-details.jpg"><img src="docs/images/star-details.jpg" width="480" alt="Sirius selected with observed catalogue data and current distance in the side panel" /></a></td>
+    <td><a href="public/guide/star-details.jpg"><img src="public/guide/star-details.jpg" width="480" alt="Sirius selected with observed catalogue data and current distance in the side panel" /></a></td>
   </tr>
 </table>
 

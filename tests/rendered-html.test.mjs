@@ -53,8 +53,11 @@ test("renders content navigation and named feature controls without slideshow ch
     assert.ok(html.includes(`id="${section}"`));
   }
   assert.doesNotMatch(html, /选择主题|暂停自动切换|上一张|下一张|role="carousel"|journey-tabs/);
-  assert.equal((html.match(/role="tablist"/g) ?? []).length, 1);
-  assert.equal((html.match(/role="tab"/g) ?? []).length, 4);
+  assert.equal((html.match(/role="tablist"/g) ?? []).length, 2);
+  assert.equal((html.match(/role="tab"/g) ?? []).length, 7);
+  for (const image of ['observatory', 'position-jump', 'star-details']) {
+    assert.ok(html.includes(`/guide/${image}.jpg`));
+  }
   assert.doesNotMatch(html, /class="planetarium-sky"/);
 });
 

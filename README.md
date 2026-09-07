@@ -18,9 +18,9 @@
 
 </div>
 
-[![银河夜航实际操作界面：全屏天幕、方向按钮、时间控制和底部工具栏](docs/images/observatory.jpg)](https://nightflight.xelope.fun/observe)
+[![银河全景，摄影 ESO/S. Brunier](public/brand/milky-way-1920.webp)](https://nightflight.xelope.fun/)
 
-<sub>观星平台实际截图 · 太阳邻域 · 左侧调整方向，底部控制时间并打开观察工具。点击下方功能截图可查看原尺寸。</sub>
+<sub>项目首页使用的银河全景照片 · © ESO/S. Brunier · <a href="https://www.eso.org/public/images/eso0932a/">原始影像</a> · 知识共享署名 4.0（CC BY 4.0）</sub>
 
 ---
 
@@ -51,7 +51,7 @@
 
 打开底部“位置跳转”，选择“内银河”。下图已完成位置切换：右侧显示六个预设位置，左下角同步更新观察者坐标。位置决定站在哪里，左侧方向按钮决定朝哪里看。
 
-[![位置跳转：已选中内银河，观察者坐标和天幕随之更新](docs/images/position-jump.jpg)](docs/images/position-jump.jpg)
+[![位置跳转：已选中内银河，观察者坐标和天幕随之更新](public/guide/position-jump.jpg)](public/guide/position-jump.jpg)
 
 ### 调整大气与显示亮度
 
@@ -70,7 +70,7 @@
   </tr>
   <tr>
     <td><a href="docs/images/object-search.jpg"><img src="docs/images/object-search.jpg" width="480" alt="输入天狼后，搜索结果显示天狼星及其目录编号" /></a></td>
-    <td><a href="docs/images/star-details.jpg"><img src="docs/images/star-details.jpg" width="480" alt="天狼星被选中，右侧展示实测恒星数据与当前距离" /></a></td>
+    <td><a href="public/guide/star-details.jpg"><img src="public/guide/star-details.jpg" width="480" alt="天狼星被选中，右侧展示实测恒星数据与当前距离" /></a></td>
   </tr>
 </table>
 

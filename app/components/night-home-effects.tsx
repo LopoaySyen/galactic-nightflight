@@ -93,6 +93,6 @@ export function NightHomeEffects({ language = 'zh', onSectionChange }: { languag
       <canvas ref={canvasRef} className="nf-star-flight"/><div className="nf-space-shade"/>
     </div>
     <div className="nf-progress" aria-hidden="true"/>
-    <div className="nf-scene-tools"><a href={photo.source} target="_blank" rel="noreferrer">{en ? 'Photo' : '摄影'}: {photo.credit} ↗</a><button type="button" aria-pressed={paused || reduced} disabled={reduced} onClick={() => setPaused(value => !value)}>{reduced ? (en ? 'Reduced motion' : '已减少动态效果') : paused ? (en ? 'Resume motion' : '继续动态效果') : (en ? 'Pause motion' : '暂停动态效果')}</button></div>
+    <div className="nf-scene-tools">{active === 2 ? <span className="nf-guide-scene-label">{en ? 'Actual observatory screenshots' : '观星平台实际操作界面'}</span> : <a href={photo.source} target="_blank" rel="noreferrer">{en ? 'Photo' : '摄影'}: {photo.credit} ↗</a>}<button type="button" aria-pressed={paused || reduced} disabled={reduced} onClick={() => setPaused(value => !value)}>{reduced ? (en ? 'Reduced motion' : '已减少动态效果') : paused ? (en ? 'Resume motion' : '继续动态效果') : (en ? 'Pause motion' : '暂停动态效果')}</button></div>
   </>;
 }

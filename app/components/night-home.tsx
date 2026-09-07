@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { homeSections, type HomeLanguage } from '@/lib/landing/home-content';
 import { HomeFeatures } from './home-features';
+import { HomeGuide } from './home-guide';
 import { NightHomeEffects } from './night-home-effects';
 
 export function NightHome({ language = 'zh' }: { language?: HomeLanguage }) {
@@ -32,11 +33,7 @@ export function NightHome({ language = 'zh' }: { language?: HomeLanguage }) {
 
     <section id="guide" data-home-section className="nf-chapter nf-guide" aria-labelledby="nf-guide-title">
       <div className="nf-guide-heading"><p className="nf-eyebrow">{T('使用', 'Getting started')}</p><h2 id="nf-guide-title">{T('选一个地方，抬头看看。', 'Pick a place. Look up.')}</h2><p className="nf-body">{T('首次进入会有基本操作引导。之后也可以从底部工具栏重新打开「新手教程」。', 'A short guide introduces the controls on your first visit. Reopen it later from the tutorial button in the bottom toolbar.')}</p></div>
-      <div className="nf-guide-grid">
-        <article><h3>{T('转动视线', 'Look around')}</h3><p>{T('按住并拖动天幕，滚轮缩放。左侧按钮可以看向银河中心、外围或盘面上下。', 'Drag the sky to turn and scroll to zoom. The left toolbar points toward the centre, outer galaxy or galactic poles.')}</p></article>
-        <article><h3>{T('移动观察位置', 'Move your position')}</h3><p>{T('打开「位置」，选择一个地点，或在银河图中自由选点。换个位置后，恒星在天空中的方向和亮度也会改变。', 'Choose a preset or a point on the galactic map. Move to another location and see the stars shift around you.')}</p></article>
-        <article><h3>{T('查看天体资料', 'Inspect an object')}</h3><p>{T('点击天体，或搜索它的名称，查看目录信息、当前距离和资料来源。', 'Select an object or search its name to see catalogue information, its current distance and data sources.')}</p></article>
-      </div>
+      <HomeGuide language={language}/>
       <a href="/observe" className="nf-text-link">{T('打开观星平台', 'Open the observatory')} <span aria-hidden="true">↗</span></a>
     </section>
 
