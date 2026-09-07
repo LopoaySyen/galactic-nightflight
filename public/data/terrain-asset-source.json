@@ -1,0 +1,28 @@
+{
+  "title": "行星地表视觉素材来源",
+  "scientificRole": "仅表示可选行星地貌，不参与银河恒星、尘埃、星系或天体动力学计算。",
+  "panorama": {
+    "file": "/terrain/planet-terrain-panorama-v2.webp",
+    "sourceDimensions": "1774 × 887 像素",
+    "projection": "2:1 等距柱状全景",
+    "generation": "OpenAI 内置图像生成工具",
+    "promptSummary": "写实、无天体的荒芜玄武岩外星地表；完整地面纵深；远山、中景和近地岩石；夜间低饱和照明；透明天空；左右边缘连续。"
+  },
+  "groundTexture": {
+    "file": "/terrain/basalt-ground-texture-v1.webp",
+    "sourceDimensions": "1254 × 1254 像素",
+    "projection": "正交俯视、双轴平铺纹理",
+    "generation": "OpenAI 内置图像生成工具",
+    "promptSummary": "写实玄武岩碎石、岩板、砾石与尘土；均匀夜间照明；无地平线、无主体、无文字。"
+  },
+  "rendering": {
+    "cameraHeight": "1.65 米",
+    "farField": "逐像素相机射线转换到独立的行星坐标系，再按球面经纬采样环形全景；不再线性平移或拉伸横条。",
+    "nearField": "俯视纹理与相机射线在水平地面求交，近地保持高频细节，远处逐渐交给环形全景。",
+    "filtering": "显卡投影与分级纹理过滤；兼容模式使用同一几何关系。原始素材分辨率不变。"
+  },
+  "limitations": [
+    "地貌属于艺术生成的观察环境，不代表银河中某颗已知行星。",
+    "它不改变任何天体位置、亮度、尘埃积分或时间演化。"
+  ]
+}

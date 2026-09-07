@@ -1,0 +1,23 @@
+{
+  "datasetName": "Yale Bright Star Catalogue visual subset with Hipparcos distances",
+  "role": "太阳附近可分辨亮星的观测锚点",
+  "upstreamCatalog": "Yale Bright Star Catalogue, Fifth Revised Edition",
+  "astrometricDistanceSource": "Hipparcos",
+  "processedSource": "https://raw.githubusercontent.com/isene/starmap/master/data/stars.csv",
+  "processedSourceRepository": "https://github.com/isene/starmap",
+  "catalogDocumentation": "https://heasarc.gsfc.nasa.gov/w3browse/star-catalog/hipparcos.html",
+  "downloadedAt": "2026-08-23",
+  "rowsIncludingHeader": 9097,
+  "rowsWithUsableDistance": 7369,
+  "sha256": "8b36f9e06f7ab275506213cb6ed61ea75570dbfb19725c31ca189fee9196133b",
+  "license": "The source repository identifies the Yale Bright Star Catalogue data as public domain.",
+  "validity": {
+    "directlyObservedViewpoint": "太阳位置",
+    "positionPropagation": "Only entries with positive finite distance are transformed into Galactocentric three-dimensional positions.",
+    "knownLimitations": [
+      "The catalogue is a bright-star subset rather than a complete Gaia source sample.",
+      "The inferred absolute magnitude retains the extinction already present on the solar line of sight.",
+      "For a displaced observer, the renderer applies modelled differential extinction relative to the solar anchor."
+    ]
+  }
+}

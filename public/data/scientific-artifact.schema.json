@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://galactic-sky-physics.blush-eel-3740.chatgpt.site/data/scientific-artifact.schema.json",
+  "title": "Milky Way simulator scientific artifact",
+  "description": "A fail-closed contract for every potential, phase-space, stellar-population, dust or response artifact used by the simulator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifactId",
+    "schemaVersion",
+    "source",
+    "sha256",
+    "frame",
+    "units",
+    "validity",
+    "uncertaintyVariantId",
+    "generationReceiptId",
+    "validationReceiptIds"
+  ],
+  "properties": {
+    "artifactId": { "type": "string", "minLength": 1 },
+    "schemaVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "url", "version", "codeCommit", "license"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" },
+        "version": { "type": "string", "minLength": 1 },
+        "codeCommit": { "type": ["string", "null"] },
+        "license": { "type": "string", "minLength": 1 }
+      }
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "origin", "handedness", "xAxis", "yAxis", "zAxis", "referenceEpoch"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "origin": { "type": "string", "minLength": 1 },
+        "handedness": { "const": "right-handed" },
+        "xAxis": { "type": "string", "minLength": 1 },
+        "yAxis": { "type": "string", "minLength": 1 },
+        "zAxis": { "type": "string", "minLength": 1 },
+        "referenceEpoch": { "type": "string", "minLength": 1 }
+      }
+    },
+    "units": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spatialDomain", "temporalDomain", "extrapolationPolicy"],
+      "properties": {
+        "spatialDomain": { "type": "string", "minLength": 1 },
+        "temporalDomain": { "type": "string", "minLength": 1 },
+        "extrapolationPolicy": { "enum": ["forbidden", "explicit-model-ensemble"] }
+      }
+    },
+    "uncertaintyVariantId": { "type": "string", "minLength": 1 },
+    "generationReceiptId": { "type": "string", "minLength": 1 },
+    "validationReceiptIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

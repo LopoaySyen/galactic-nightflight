@@ -1,0 +1,31 @@
+{
+  "title": "Gaia 第三批数据发布明亮恒星六维样本",
+  "release": "Gaia Data Release 3",
+  "sourcePage": "https://www.cosmos.esa.int/web/gaia/dr3",
+  "archiveEndpoint": "https://gea.esac.esa.int/tap-server/tap/sync",
+  "retrievalQuery": "SELECT\n  ra,\n  dec,\n  l,\n  b,\n  parallax,\n  pmra,\n  pmdec,\n  radial_velocity,\n  phot_g_mean_mag,\n  bp_rp,\n  teff_gspphot\nFROM gaiadr3.gaia_source\nWHERE phot_g_mean_mag >= 6.5\n  AND phot_g_mean_mag < 8.5\n  AND parallax > 0\n  AND parallax_over_error > 5\n  AND ruwe < 1.4\n  AND phot_bp_mean_mag IS NOT NULL\n  AND phot_rp_mean_mag IS NOT NULL\n  AND radial_velocity IS NOT NULL\nORDER BY phot_g_mean_mag ASC",
+  "selection": {
+    "magnitudeRange": "Gaia G 波段 6.5 至 8.5 星等",
+    "parallaxSignalToNoiseMinimum": 5,
+    "renormalisedUnitWeightErrorMaximum": 1.4,
+    "requiresRadialVelocity": true
+  },
+  "sourceCount": 69421,
+  "recordLayout": [
+    "银河中心横向位置（秒差距）",
+    "银河中心纵向位置（秒差距）",
+    "银河盘垂直位置（秒差距）",
+    "横向速度（千米每秒）",
+    "纵向速度（千米每秒）",
+    "垂直速度（千米每秒）",
+    "Gaia G 波段绝对星等",
+    "有效温度（开尔文）",
+    "太阳视点模型消光（星等）"
+  ],
+  "sha256": "d7ec7b2e82f6c2ef159f8eb1f4637b43f193f15eee59b0ae7e8535c658d9af7d",
+  "limitations": [
+    "这是浏览器实时渲染使用的明亮、完整六维子样本，不是约十太字节的完整 Gaia 数据发布。",
+    "Gaia 对最亮恒星存在饱和与缺失，因此 6.5 星等以内继续由耶鲁亮星表补足。",
+    "没有发布有效温度的恒星使用 Gaia 蓝减红颜色近似温度；该值只用于显示颜色。"
+  ]
+}

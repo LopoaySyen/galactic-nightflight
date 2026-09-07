@@ -1,0 +1,489 @@
+{
+  "$schema": "/data/model-manifest.schema.json",
+  "schemaVersion": "0.3.0",
+  "modelId": "milky-way-internal-view-architecture-2026-08-20",
+  "displayName": "银河任意视点物理模拟器：物理模型、数据架构与渲染核",
+  "targetScientificClaim": "当前观测约束下、物理自洽的银河系内部视点预测",
+  "currentScientificClaim": "物理模型、数据架构与确定性渲染核；尚未生成任意银河位置的星空预测",
+  "status": "architecture-only",
+  "referenceEpoch": "unfrozen-pending-joint-frame-fit",
+  "rendererGate": {
+    "unlocked": false,
+    "policy": "all-required-capabilities-must-be-validated",
+    "forbiddenDirectControls": [
+      "starCountMultiplier",
+      "milkyWayGlowMultiplier",
+      "milkyWayAngularWidth",
+      "positionDependentExposure",
+      "preRenderedSkyInterpolation"
+    ]
+  },
+  "unitSystem": {
+    "onlineLength": "parsec",
+    "onlineVelocity": "kilometre-per-second",
+    "onlineTime": "million-year",
+    "onlineMass": "solar-mass",
+    "offlineEngineUnits": "must-be-declared-per-artifact",
+    "conversionPolicy": "explicit-and-tested"
+  },
+  "canonicalFrame": {
+    "origin": "Sagittarius-A-star-radio-source",
+    "handedness": "right-handed",
+    "xDefinition": "galactic-plane axis whose positive direction points from the solar side toward the Galactic centre",
+    "yDefinition": "direction of Galactic rotation at the solar position",
+    "zDefinition": "north-galactic-pole",
+    "solarPlanarUiAnchorParsec": [-8277, 0, 0],
+    "solarPlanarUiAnchorWarning": "This is only the z=0 map anchor. Solar validation requires a separate posterior for z, three velocity components, reference epoch and covariance.",
+    "azimuthDefinition": "atan2(y,x)",
+    "observerVerticalPositionDefaultParsec": 0,
+    "observerRadiusRangeParsec": [100, 20000],
+    "rotationSignViewedFromNorthGalacticPole": "clockwise-negative",
+    "frameWarning": "Every imported artifact must declare whether its velocity is an inertial velocity expressed in a rotating basis or the time derivative of rotating coordinates."
+  },
+  "engine": {
+    "name": "AGAMA",
+    "expandedName": "Action-based Galaxy Modelling Architecture",
+    "repository": "https://github.com/GalacticDynamics-Oxford/Agama",
+    "commit": "60d8d8b8dce4eea33e500c34700f28ebc6bbfd7b",
+    "status": "candidate-commit-pinned-artifacts-not-generated",
+    "role": [
+      "potential-expansion",
+      "distribution-function-sampling",
+      "orbit-integration",
+      "invariant-validation"
+    ],
+    "floatingPoint": "float64-required-for-validation"
+  },
+  "modelFamilies": [
+    {
+      "modelId": "outer-control-mcmillan-2017",
+      "role": "axisymmetric-control-and-outer-galaxy-reference",
+      "status": "source-selected-artifact-missing",
+      "source": "https://academic.oup.com/mnras/article/465/1/76/2417479",
+      "warning": "Not valid as the sole inner-Galaxy potential and not additive with a complete barred model."
+    },
+    {
+      "modelId": "hunter-2024-paper-v2-gravitational-potential-reproduction",
+      "role": "published-gravitational-potential-assembly-control",
+      "status": "source-selected-reconstruction-and-validation-required",
+      "source": "https://arxiv.org/html/2403.18000v2",
+      "components": [
+        "central-black-hole",
+        "nuclear-star-cluster",
+        "nuclear-stellar-disc",
+        "analytic-box-peanut-and-long-bar",
+        "holed-thin-disc",
+        "holed-thick-disc",
+        "gas-discs",
+        "einasto-dark-matter-halo"
+      ],
+      "spiralArmsEnabled": true,
+      "centralMassSolarMasses": 4154000,
+      "centralMassRepresentation": "Plummer-softened-with-scale-0.1-parsec",
+      "barPatternSpeedKilometresPerSecondPerKiloparsec": -37.5,
+      "warning": "This reproduces a gravitational-potential assembly, including the paper's spiral perturbation. It is not a whole-sky stellar phase-space or radiative model. Paper-v2 and the current AGAMA example script must never share one model ID."
+    },
+    {
+      "modelId": "derived-single-pattern-hunter-assembly-no-spiral-arms",
+      "role": "first-de-duplicated-whole-galaxy-gravitational-assembly-candidate",
+      "status": "new-model-global-refit-required",
+      "source": "https://arxiv.org/html/2403.18000v2",
+      "derivedFrom": "hunter-2024-paper-v2-gravitational-potential-reproduction",
+      "spiralArmsEnabled": false,
+      "reasonForOmission": "A single rigid pattern permits one Jacobi invariant during the first orbit-validation stage.",
+      "missingStructureWarning": "Removing spiral gravity is a model assumption. Whether young-star emissivity and dust retain spiral structure must be declared independently.",
+      "barState": {
+        "referenceEpoch": null,
+        "phaseAngleRadians": null,
+        "phaseWrap": "[-pi,pi)",
+        "signedPatternSpeedKilometresPerSecondPerKiloparsec": null,
+        "status": "artifact-missing"
+      },
+      "warning": "Any replacement of the black-hole mass, solar radius, bar speed or other component creates this new model identity and requires a global refit."
+    },
+    {
+      "modelId": "bar-bulge-portail-family",
+      "role": "non-axisymmetric-bar-bulge-inner-disc-constraint",
+      "status": "source-selected-phase-space-asset-unresolved",
+      "source": "https://academic.oup.com/mnras/article/465/2/1621/2417047",
+      "analyticDensitySource": "https://arxiv.org/abs/2204.13114",
+      "patternSpeedKilometresPerSecondPerKiloparsec": {
+        "mean": 39,
+        "standardDeviation": 3.5,
+        "status": "posterior-not-fixed-constant"
+      },
+      "barPhaseAtReferenceEpoch": {
+        "angleRadians": null,
+        "referenceEpoch": null,
+        "wrap": "[-pi,pi)",
+        "status": "unresolved-required-before-non-axisymmetric-evaluation"
+      },
+      "warning": "The complete model already contains inner disc, halo and central mass contributions."
+    },
+    {
+      "modelId": "nuclear-stellar-disc-sormani-2022",
+      "role": "nuclear-stellar-disc-six-dimensional-distribution-function",
+      "status": "source-selected-artifact-missing",
+      "source": "https://academic.oup.com/mnras/article/512/2/1857/6551903",
+      "dominanceScaleParsec": [30, 300],
+      "kinematicConstraintApproximateRangeParsec": [10, 300],
+      "overlapPolicy": "no-hard-thirty-parsec-boundary-with-nuclear-cluster",
+      "axisymmetry": "model-assumption-with-alternatives-required"
+    },
+    {
+      "modelId": "nuclear-star-cluster",
+      "role": "central-nuclear-star-cluster-density-phase-space-and-population-candidate",
+      "status": "candidate-model-not-frozen",
+      "warning": "No production sky may be generated for central viewpoints until a density, phase-space and population model is selected and validated."
+    },
+    {
+      "modelId": "central-six-dimensional-upgrade-candidate",
+      "role": "replace-analytic-central-components-with-explicit-but-overlapping-distribution-function-candidates",
+      "status": "candidate-models-selected-global-refit-required",
+      "sources": [
+        "https://academic.oup.com/mnras/article/512/2/1857/6551903",
+        "https://arxiv.org/html/2603.29502v2"
+      ],
+      "nuclearDiscSource": "https://academic.oup.com/mnras/article/512/2/1857/6551903",
+      "nuclearClusterSource": "https://arxiv.org/html/2603.29502v2",
+      "warning": "Vasiliev-2026 fits nuclear-cluster data mostly inside about 10 parsecs while holding the adopted nuclear-disc distribution-function parameters fixed; it is not a free joint refit of cluster, disc and black hole. The combined potential needs a new identity and validation."
+    },
+    {
+      "modelId": "sagittarius-a-star-point-mass",
+      "role": "central-black-hole-gravity",
+      "status": "posterior-selected-not-a-zero-uncertainty-constant",
+      "massPosteriorSolarMasses": {
+        "mean": 4297000,
+        "covarianceWithDistanceRequired": true
+      },
+      "source": "https://www.aanda.org/articles/aa/full_html/2022/01/aa42465-21/aa42465-21.html",
+      "renderAsVisibleDisc": false,
+      "gravitationalEvidence": "dynamical-inference-from-stellar-orbits",
+      "orbitDomainPolicy": "Sub-parsec trajectories are excluded from the Newtonian point-mass production domain until a relativistic branch is validated. A faithful Hunter-v2 reproduction instead uses that paper's 0.1-parsec Plummer softening."
+    }
+  ],
+  "massLedger": {
+    "combinationPolicy": "component-density-substitution-followed-by-global-refit",
+    "forbidPotentialBlendingByRadius": true,
+    "components": [
+      {
+        "id": "thin-stellar-disc",
+        "owner": "derived-single-pattern-hunter-assembly-no-spiral-arms",
+        "retained": "one holed thin-disc gravitational mass density",
+        "excluded": "the original unholed McMillan thin disc"
+      },
+      {
+        "id": "thick-stellar-disc",
+        "owner": "derived-single-pattern-hunter-assembly-no-spiral-arms",
+        "retained": "one holed thick-disc gravitational mass density",
+        "excluded": "the original unholed McMillan thick disc"
+      },
+      {
+        "id": "galactic-bar",
+        "owner": "Sormani-2022 analytic density constrained by Portail-2017",
+        "retained": "the named long-bar density component",
+        "excluded": "disc, halo and central mass carried by any complete Portail model"
+      },
+      {
+        "id": "box-peanut-bulge",
+        "owner": "Sormani-2022 analytic density constrained by Portail-2017",
+        "retained": "the named box/X-shaped density component",
+        "excluded": "the spherical McMillan bulge and the separately owned long bar"
+      },
+      {
+        "id": "nuclear-stellar-disc",
+        "owner": "one selected analytic-density or distribution-function variant",
+        "retained": "one nuclear-disc mass realization",
+        "excluded": "all alternate nuclear-disc realizations"
+      },
+      {
+        "id": "nuclear-star-cluster",
+        "owner": "one selected density and phase-space variant",
+        "retained": "one nuclear-cluster mass realization with an explicit overlap fit",
+        "excluded": "alternate cluster models and any mass already assigned to the nuclear disc or black hole"
+      },
+      {
+        "id": "gas-mass",
+        "owner": "one static or self-gravitating gas realization",
+        "retained": "exactly one gas gravitational mass field",
+        "excluded": "duplicate static gas when live self-gravity is active"
+      },
+      {
+        "id": "dark-matter-halo",
+        "owner": "one halo refitted jointly with the selected baryonic density",
+        "retained": "one dark-matter density field",
+        "excluded": "haloes embedded in any other complete model"
+      },
+      {
+        "id": "central-black-hole",
+        "owner": "one model-specific central-mass representation",
+        "retained": "one point-mass or one explicitly softened reproduction term",
+        "excluded": "all other central black-hole terms"
+      }
+    ],
+    "requiredAssertions": [
+      "every-mass-component-has-one-owner",
+      "no-full-bulge-duplicate",
+      "no-full-inner-disc-duplicate",
+      "no-nuclear-disc-duplicate",
+      "gas-static-or-live-but-not-both",
+      "black-hole-counted-once",
+      "rotation-curve-revalidated",
+      "vertical-force-revalidated",
+      "density-non-negative"
+    ]
+  },
+  "phaseSpace": {
+    "requiredDimensions": ["x", "y", "z", "velocity-x", "velocity-y", "velocity-z"],
+    "persistentStarIdentifiersRequired": true,
+    "weightedParticleSemantics": "A weighted dynamical particle may represent many stars and must never be rendered as one brighter star.",
+    "fallbackRandomVelocitiesAllowed": false,
+    "globalExactEquilibriumClaimAllowed": false,
+    "globalSixDimensionalArtifactStatus": "unresolved",
+    "distinctPhysicalFields": [
+      "gravitational-mass-density",
+      "stellar-tracer-number-density",
+      "wavelength-dependent-stellar-emissivity"
+    ],
+    "couplingRequirements": [
+      "component-mass-to-light-ratio",
+      "initial-mass-function",
+      "star-formation-history",
+      "chemical-evolution-history"
+    ]
+  },
+  "stellarPopulation": {
+    "requiredIntrinsicFields": [
+      "initial-mass",
+      "current-mass",
+      "age",
+      "metallicity",
+      "alpha-element-abundance",
+      "initial-mass-function-variant",
+      "multiplicity-state",
+      "evolutionary-stage",
+      "remnant-state",
+      "variability-model",
+      "luminosity",
+      "effective-temperature",
+      "absolute-magnitude-with-filter-and-ab-or-vega-system",
+      "spectral-energy-distribution"
+    ],
+    "populationSpecificHistoriesRequired": [
+      "star-formation-history",
+      "chemical-evolution-history",
+      "binary-and-multiple-star-prescription",
+      "initial-to-final-mass-and-remnant-prescription",
+      "variable-and-short-lived-phase-prescription"
+    ],
+    "gaiaUsage": "selection-function-conditioned-calibration-and-observed-layer-assimilation-only",
+    "gaiaCatalogueMayBeTranslated": false,
+    "gaiaAssimilationPolicy": "An observed Gaia layer and a latent unselected population layer are modelled jointly. A synthetic object is removed only with a defensible cross-identification and mass-ownership rule; a whole geometric volume is never replaced.",
+    "evolutionGrid": {
+      "primaryCandidate": "MIST-v1.2",
+      "systematicAlternatives": ["BaSTI-alpha-enhanced", "PARSEC-v2-rotation"],
+      "sources": {
+        "MIST-v1.2": "https://mist.science/",
+        "BaSTI-alpha-enhanced-2021": "https://arxiv.org/abs/2012.10085",
+        "PARSEC-v2-rotation-2022": "https://www.aanda.org/articles/aa/full_html/2022/09/aa44166-22/aa44166-22.html"
+      },
+      "status": "source-selected-export-hash-and-capability-mask-missing",
+      "capabilityWarning": "MIST-v1.2 is primarily solar-scaled and cannot supply a freely varying alpha-element abundance without an explicit alternative grid."
+    },
+    "atmosphereGrid": {
+      "primaryCandidate": "BOSZ-2024-recomputed-2025-09-24",
+      "specialisedAlternatives": ["PHOENIX-cool-stars", "TLUSTY-hot-stars", "PoWR-stellar-winds"],
+      "sources": {
+        "BOSZ-2024-recomputed-2025-09-24": "https://archive.stsci.edu/hlsp/bosz",
+        "PHOENIX-2013": "https://www.aanda.org/articles/aa/full_html/2013/05/aa19058-12/aa19058-12.html",
+        "TLUSTY-OSTAR2002": "https://tlusty.oca.eu/tlusty/Tlusty2002/tlusty-frames-OS02.html",
+        "PoWR-current-unfrozen": "https://www.astro.physik.uni-potsdam.de/PoWR/"
+      },
+      "status": "sources-selected-specific-grid-versions-and-artifact-hashes-missing"
+    }
+  },
+  "dust": {
+    "representation": "separate-observational-extinction-posterior-and-grain-optics-model",
+    "observationalExtinctionPosteriorRequiredFields": [
+      "cumulative-or-differential-extinction-or-reddening",
+      "quantity-unit",
+      "reference-band-or-colour",
+      "distance-posterior",
+      "posterior-sample-id",
+      "spatial-correlation-scale",
+      "source-product",
+      "validity-mask"
+    ],
+    "grainOpticsRequiredFields": [
+      "grain-model-id",
+      "wavelength-dependent-absorption-coefficient",
+      "wavelength-dependent-scattering-coefficient",
+      "scattering-albedo",
+      "scattering-phase-function",
+      "band-conversion-model-and-degeneracy"
+    ],
+    "lineOfSightIntegration": "adaptive-error-controlled-direct-extinction-with-kappa-ext-equals-kappa-abs-plus-kappa-sca",
+    "wholeGalaxyTruthMapExists": false,
+    "unsupportedRegionPolicy": "model-ensemble-with-explicit-label",
+    "independentPixelNoiseAllowed": false,
+    "observationalConstraintProducts": [
+      "Edenhofer-2024-local-1.25-kiloparsec",
+      "Bayestar19",
+      "DECaPS-three-dimensional-dust-2025",
+      "Marshall-2006-inner-plane-cross-check"
+    ],
+    "radiativeTransferEngine": "SKIRT-9-offline",
+    "scatteredLightPolicy": "Scattering into the ray is a separate directional source term; it is never hidden inside direct extinction.",
+    "timePolicy": "Every scattering source field must carry an epoch and bar phase, or an explicit static-field approximation with an error bound."
+  },
+  "radiation": {
+    "resolvedPointSourceOutput": "spectral-irradiance-or-spectral-flux-density",
+    "resolvedPointSourceUnit": "watt-per-square-metre-per-nanometre",
+    "diffuseAndUnresolvedOutput": "spectral-radiance",
+    "diffuseAndUnresolvedUnit": "watt-per-square-metre-per-steradian-per-nanometre",
+    "unificationStage": "after-point-spread-function-and-pixel-solid-angle-application",
+    "resolvedUnresolvedSplit": "observation-system-dependent",
+    "fluxConservationRequired": true,
+    "promotionDemotionPolicy": "A deterministic multi-resolution catalogue with stable star identifiers moves the exact same spectral flux between the point-source and background representations for each view.",
+    "dustScattering": "offline-radiative-transfer-source-field-required",
+    "rgbAllowedBeforeObserverModel": false
+  },
+  "observer": {
+    "probeMode": "position-only-teleport-for-query",
+    "dynamicMode": "six-dimensional-state-integrated-with-stars",
+    "positionAzimuthIndependentFromViewDirection": true,
+    "localEnvironmentBaseline": "vacuum-no-atmosphere-no-airglow-no-light-pollution",
+    "earthSurfaceValidation": "separate-atmosphere-branch-required",
+    "lightCone": {
+      "status": "contract-required-artifact-missing",
+      "directSourceEquation": "t_observe - t_emit = distance(source(t_emit), observer(t_observe)) / c",
+      "requires": [
+        "retarded-emission-time-solver",
+        "observer-aberration",
+        "source-and-observer-doppler-transform",
+        "multi-segment-delay-for-scattered-light"
+      ],
+      "simultaneousSnapshotApproximation": "forbidden-unless-labelled-with-a-time-and-distance-error-bound"
+    },
+    "solarValidationTransform": {
+      "galactocentricToIcrsMatrixVersion": null,
+      "iauGalacticConventionVersion": null,
+      "status": "unresolved"
+    }
+  },
+  "observationSystems": {
+    "humanVision": {
+      "status": "response-data-not-connected",
+      "requiredStates": ["photopic", "mesopic", "scotopic"],
+      "requiredFields": [
+        "pupil-diameter-and-retinal-illuminance",
+        "ocular-spectral-transmission",
+        "background-dependent-contrast-threshold",
+        "spatial-and-temporal-summation",
+        "dark-adaptation-time",
+        "intraocular-scatter-and-point-spread-function",
+        "display-luminance-and-colour-calibration"
+      ],
+      "exposureMultiplierFallbackAllowed": false
+    },
+    "camera": {
+      "status": "sensor-profile-not-connected",
+      "standardSemantics": "EMVA-1288 defines how sensor properties are measured; it does not provide a concrete sensor profile or complete camera forward model.",
+      "requiredFields": [
+        "aperture",
+        "focal-length",
+        "spectral-transmission",
+        "exposure-time",
+        "pixel-area",
+        "quantum-efficiency",
+        "dark-current",
+        "read-noise",
+        "full-well-capacity",
+        "point-spread-function"
+      ]
+    }
+  },
+  "dataProducts": [
+    "potential-coefficient-tiles",
+    "six-dimensional-phase-space-chunks",
+    "stellar-population-templates",
+    "three-dimensional-dust-posterior-field",
+    "unresolved-spectral-emissivity-field",
+    "dust-scattering-source-field",
+    "validation-receipts"
+  ],
+  "specialisedDataContracts": {
+    "potential-coefficient-tiles": "contract-required",
+    "six-dimensional-phase-space-chunks": "contract-required",
+    "stellar-population-and-spectrum-grid": "contract-required",
+    "observational-extinction-posterior": "contract-required",
+    "grain-optics-model": "contract-required",
+    "dust-scattering-source-field": "contract-required",
+    "deterministic-multiresolution-star-catalogue": "contract-required",
+    "unresolved-emissivity-and-subtraction-ledger": "contract-required",
+    "human-vision-response": "contract-required",
+    "camera-response": "contract-required",
+    "light-cone-solution": "contract-required"
+  },
+  "numericalIntegration": {
+    "candidateIntegrator": "DOP853",
+    "stateScaling": "dimensionless-canonical-scaling-or-per-component-absolute-tolerances-with-units-required",
+    "invariantDriftNormalisation": "positive-characteristic-energy-scale-independent-of-potential-zero-required",
+    "singlePatternJacobiOnly": true
+  },
+  "validation": {
+    "status": "not-run",
+    "dynamics": [
+      "rotation-curve",
+      "vertical-force",
+      "inner-galaxy-kinematics",
+      "poisson-residual",
+      "static-energy-drift",
+      "rotating-bar-jacobi-drift",
+      "tolerance-convergence",
+      "grid-convergence"
+    ],
+    "solarView": [
+      "star-count-by-magnitude",
+      "colour-magnitude-distribution",
+      "galactic-coordinate-density-profile",
+      "dust-dark-lane-morphology"
+    ],
+    "solarDiffuseSurfaceBrightness": {
+      "status": "reference-dataset-unresolved-gate-unavailable",
+      "warning": "Gaia and 2MASS point-source catalogues cannot by themselves validate absolute unresolved or diffuse surface brightness."
+    },
+    "innerGalaxy": [
+      "infrared-star-counts",
+      "line-of-sight-velocity",
+      "proper-motion",
+      "metallicity-distribution",
+      "nuclear-disc-scale-height"
+    ],
+    "selectionFunctionsMustBeApplied": true,
+    "withheldValidationSkyRequired": true
+  },
+  "artifactContract": {
+    "modelManifestSchema": "/data/model-manifest.schema.json",
+    "scientificArtifactSchema": "/data/scientific-artifact.schema.json",
+    "validationReceiptSchema": "/data/validation-receipt.schema.json",
+    "requiredMetadata": [
+      "artifact-id",
+      "schema-version",
+      "source-paper",
+      "source-version",
+      "source-code-commit",
+      "license",
+      "sha256",
+      "coordinate-frame",
+      "units",
+      "validity-domain",
+      "extrapolation-policy",
+      "uncertainty-variant-id",
+      "generation-receipt",
+      "validation-receipt"
+    ],
+    "missingDataBehaviour": "typed-unavailable-error",
+    "syntheticVisualFallbackAllowed": false
+  }
+}

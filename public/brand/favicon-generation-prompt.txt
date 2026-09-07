@@ -1,0 +1,8 @@
+Use case: precise-object-edit
+Asset type: one favicon adaptation of the selected 银河夜航 / Galactic Nightflight starboat logo.
+Input image is the original selected logo and is the edit target. Keep its recognizable curved upturned boat pointing upper right, the single four-point navigation star above, and a reduced arc beneath.
+Primary request: produce a usable ultra-bold browser favicon that reads clearly at 16 × 16 pixels. Replace the black background with a completely flat solid PALE ICE BLUE #DDEEFF background. Draw the whole foreground mark in completely flat solid DEEP NAVY #102B4E. It must be a light square with a distinct dark starboat symbol.
+Simplify drastically: ONE chunky solid boat silhouette, no narrow slit or tiny second hull; ONE compact bold four-point star with broad short points; ONE short thick sweeping arc beneath the boat, well separated by a wide gap. Remove extra orbit segments and every delicate detail. Preserve the distinctive upper-right upturned bow. Make the star and boat visually balanced, with a star about one third the boat width. Use thick filled shapes, broad negative spaces, and hard clean edges.
+Composition: compact centered unified symbol filling 88% of a square canvas with approximately 6% pale background margin. Maximize the sizes of the boat and star within that footprint.
+Exact two flat colors only: pale ice blue background #DDEEFF and deep navy foreground #102B4E. Actual opaque background; no transparency requested.
+Avoid: black or dark background, checkerboard, simulated transparency, gradients, lighting, texture, shadow, glow, fine linework, thin tips, delicate details, letters, words, borders, additional stars, mockups, multiple variants. One finished square icon only.

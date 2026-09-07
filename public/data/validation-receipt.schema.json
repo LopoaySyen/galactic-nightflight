@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://galactic-sky-physics.blush-eel-3740.chatgpt.site/data/validation-receipt.schema.json",
+  "title": "Milky Way simulator validation receipt",
+  "description": "The numerical and observational checks attached to one immutable scientific artifact.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "receiptId",
+    "artifactId",
+    "createdAt",
+    "validatorVersion",
+    "validatorCodeCommit",
+    "inputSha256",
+    "dependencyArtifacts",
+    "referenceDatasets",
+    "selectionFunctionIds",
+    "withheldValidationData",
+    "metrics",
+    "overallStatus"
+  ],
+  "properties": {
+    "receiptId": { "type": "string", "minLength": 1 },
+    "artifactId": { "type": "string", "minLength": 1 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "validatorVersion": { "type": "string", "minLength": 1 },
+    "validatorCodeCommit": { "type": "string", "pattern": "^[a-f0-9]{7,64}$" },
+    "inputSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dependencyArtifacts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifactId", "sha256"],
+        "properties": {
+          "artifactId": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    "referenceDatasets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["datasetId", "version", "sha256"],
+        "properties": {
+          "datasetId": { "type": "string", "minLength": 1 },
+          "version": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    "selectionFunctionIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "withheldValidationData": { "type": "boolean" },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "value", "unit", "acceptanceRule", "passed"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "value": { "type": "number" },
+          "unit": { "type": "string", "minLength": 1 },
+          "acceptanceRule": { "type": "string", "minLength": 1 },
+          "passed": { "type": "boolean" }
+        }
+      }
+    },
+    "overallStatus": { "enum": ["passed", "failed"] }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "overallStatus": { "const": "passed" } },
+        "required": ["overallStatus"]
+      },
+      "then": {
+        "properties": {
+          "metrics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": { "passed": { "const": true } },
+              "required": ["passed"]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

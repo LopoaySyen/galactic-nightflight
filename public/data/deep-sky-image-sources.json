@@ -1,0 +1,56 @@
+{
+  "title": "深空观测影像增强层的数据来源",
+  "displayPolicy": "照片按自身覆盖的天空角范围定位和投影，而非把局部照片铺成整个天体。宽视场照片的横纵方向随相机投影变化。只有相机模式显示照片；可用特写按钮缩小视场，不必放大天体的物理角尺寸。",
+  "colourPolicy": "这些天文照片由光学波段组合；颜色不等同于裸眼颜色。显示时扣除照片边缘估计的天空底色、渐隐外缘，并在独立图层与实际天空作增亮混合，避免暗部遮住背景。观测映射降低饱和度并保留线性亮度；沉浸增强保留更强颜色。这是外观融合，不代表绝对测光标定。",
+  "sources": [
+    {
+      "object": "猎户座大星云 M42",
+      "sourcePage": "https://www.eso.org/public/images/eso1723a/",
+      "credit": "ESO/G. Beccari",
+      "imageUrl": "https://cdn.eso.org/images/screen/eso1723a.jpg",
+      "licence": "CC BY 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "fieldWidthDegrees": 0.9991666666666668,
+      "fieldHeightDegrees": 0.776,
+      "centreRightAscensionDegrees": 83.7844167,
+      "centreDeclinationDegrees": -5.4787,
+      "northLeftOfVerticalDegrees": 0.2
+    },
+    {
+      "object": "昴星团 M45",
+      "sourcePage": "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-45/",
+      "credit": "NASA, ESA, AURA/Caltech, Palomar Observatory"
+    },
+    {
+      "object": "半人马座欧米茄星团",
+      "sourcePage": "https://www.eso.org/public/images/eso1119b/",
+      "credit": "ESO/INAF-VST/OmegaCAM. Acknowledgement: A. Grado, L. Limatola/INAF-Capodimonte Observatory",
+      "imageUrl": "https://cdn.eso.org/images/screen/eso1119b.jpg",
+      "licence": "CC BY 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "fieldWidthDegrees": 0.848,
+      "fieldHeightDegrees": 0.848,
+      "centreRightAscensionDegrees": 201.6969583,
+      "centreDeclinationDegrees": -47.4795389,
+      "northLeftOfVerticalDegrees": 0
+    },
+    {
+      "object": "仙女座星系 M31",
+      "sourcePage": "https://esahubble.org/images/heic1502b/",
+      "credit": "NASA, ESA, Digitized Sky Survey 2 (Acknowledgement: Davide De Martin)",
+      "imageUrl": "https://cdn.esahubble.org/archives/images/screen/heic1502b.jpg",
+      "licence": "CC BY 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "fieldWidthDegrees": 6.033333333333333,
+      "fieldHeightDegrees": 3.902,
+      "centreRightAscensionDegrees": 10.75225,
+      "centreDeclinationDegrees": 41.2608694,
+      "northLeftOfVerticalDegrees": 1.9
+    }
+  ],
+  "limitations": [
+    "猎户座照片包含主要星云结构，但边缘仍有向更大分子云延伸的暗弱云气。",
+    "照片只有太阳附近方向的二维观测；远离参考视点时的形态是固定图像平面的投影近似，不是完整三维重建。",
+    "昴星团保留此前影像，其朝向和完整图幅还没有同样精度的标定。"
+  ]
+}

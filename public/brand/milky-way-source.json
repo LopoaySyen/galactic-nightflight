@@ -1,0 +1,36 @@
+{
+  "title": "The Milky Way panorama",
+  "source_id": "eso0932a",
+  "source_page": "https://www.eso.org/public/images/eso0932a/",
+  "original_url": "https://cdn.eso.org/images/original/eso0932a.tif",
+  "original_file": "milky-way-panorama-original.tif",
+  "original_width": 6000,
+  "original_height": 3000,
+  "original_bytes": 29082084,
+  "original_sha256": "10f209ab83e1fd89e7fa1ed70277ffc6ed19c43549f04ec637c6806d98aff035",
+  "credit": "ESO/S. Brunier",
+  "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "eso_usage_url": "https://www.eso.org/public/outreach/copyright/",
+  "source_release_date": "2009-09-14",
+  "retrieved_date": "2026-09-07",
+  "license_scope": "Published 18-million-pixel, 6000 x 3000 photograph. The source caption reserves access to a separate 800-million-pixel original; that separate image was not retrieved or used.",
+  "changes": "TIFF decoded and converted to WebP quality 90, method 6. The 4096 variant is proportionally downsampled with Lanczos. The 6000 variant keeps native dimensions. Embedded color profile and source XMP retained. No crop, retouch, rotation, generation, or upscaling.",
+  "attribution_instructions": "Display the exact full credit ESO/S. Brunier clearly and readably near the displayed image, with active source and license links online. Include the source, license, and change description in public repository asset notices. Do not imply endorsement.",
+  "files": [
+    {
+      "file": "milky-way-panorama-4096.webp",
+      "width": 4096,
+      "height": 2048,
+      "bytes": 2441274,
+      "sha256": "92a0704a90fd6c89bdfca47c19b00a4f420fbe6e2dacac403b2767213b1f7858"
+    },
+    {
+      "file": "milky-way-panorama-6000.webp",
+      "width": 6000,
+      "height": 3000,
+      "bytes": 5076090,
+      "sha256": "8ae0e5756763a95b9f5d7accad2ba7ec552dc322f26f1d0568c2e0cff334c604"
+    }
+  ]
+}

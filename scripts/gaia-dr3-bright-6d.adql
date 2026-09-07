@@ -1,0 +1,22 @@
+SELECT
+  ra,
+  dec,
+  l,
+  b,
+  parallax,
+  pmra,
+  pmdec,
+  radial_velocity,
+  phot_g_mean_mag,
+  bp_rp,
+  teff_gspphot
+FROM gaiadr3.gaia_source
+WHERE phot_g_mean_mag >= 6.5
+  AND phot_g_mean_mag < 8.5
+  AND parallax > 0
+  AND parallax_over_error > 5
+  AND ruwe < 1.4
+  AND phot_bp_mean_mag IS NOT NULL
+  AND phot_rp_mean_mag IS NOT NULL
+  AND radial_velocity IS NOT NULL
+ORDER BY phot_g_mean_mag ASC

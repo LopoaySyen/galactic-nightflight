@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "Please cite Galactic Nightflight / 银河夜航, LopoaySyen, the source repository and the version used. Commercial use is permitted under Apache License 2.0."
+title: "Galactic Nightflight / 银河夜航"
+type: software
+authors:
+  - name: LopoaySyen
+    website: "https://github.com/LopoaySyen"
+repository-code: "https://github.com/LopoaySyen/galactic-nightflight"
+license: Apache-2.0
+date-released: 2026-09-07
+abstract: "An interactive three-dimensional galactic observatory combining measured star catalogues and approximate Milky Way models."
