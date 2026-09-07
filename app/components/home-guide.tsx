@@ -77,9 +77,13 @@ export function HomeGuide({ language }: { language: HomeLanguage }) {
           <img src={animate && index === selected ? step.animation : step.image} width="1363" height="936" loading="lazy" decoding="async" alt={step.alt[language]}/>
           <span className="nf-guide-expand" aria-hidden="true">{en ? 'View full size' : '查看大图'} ↗</span>
         </a>
-        <figcaption><span className="nf-guide-shot-label">{en ? 'RECORDED IN THE OBSERVATORY' : '实际操作录制'}</span><button type="button" className="nf-guide-playback" aria-pressed={animate} onClick={() => setPlayback(animate ? 'still' : 'play')}>{animate ? (en ? 'Show still image' : '显示静态图') : (en ? 'Play demonstration' : '播放演示')}</button><span className="nf-guide-caption">{step.caption[language]}</span></figcaption>
-        <p className="nf-guide-mobile-copy">{step.body[language]}</p>
       </figure>)}
+    </div>
+    <div className="nf-guide-meta">
+      <span className="nf-guide-shot-label">{en ? 'RECORDED IN THE OBSERVATORY' : '实际操作录制'}</span>
+      <button type="button" className="nf-guide-playback" aria-pressed={animate} onClick={() => setPlayback(animate ? 'still' : 'play')}>{animate ? (en ? 'Show still image' : '显示静态图') : (en ? 'Play demonstration' : '播放演示')}</button>
+      <span className="nf-guide-caption">{steps[selected].caption[language]}</span>
+      <p className="nf-guide-mobile-copy">{steps[selected].body[language]}</p>
     </div>
   </div>;
 }
