@@ -14,11 +14,9 @@
     "test:core": "node --test tests/physics-core.test.mjs tests/architecture-guard.test.mjs",
     "test:rendered": "node --test tests/rendered-html.test.mjs",
     "typecheck": "tsc --noEmit --incremental false",
-    "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
+    "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {
-    "drizzle-orm": "0.45.2",
     "next": "16.2.6",
     "react": "19.2.6",
     "react-dom": "19.2.6"
@@ -31,7 +29,6 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
     "@vitejs/plugin-rsc": "0.5.26",
-    "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
     "react-server-dom-webpack": "19.2.6",
@@ -43,6 +40,6 @@
   },
   "type": "module",
   "displayName": "银河夜航",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "author": "LopoaySyen"
 }

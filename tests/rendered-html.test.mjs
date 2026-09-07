@@ -44,7 +44,7 @@ test("renders content navigation and named feature controls without slideshow ch
   assert.match(html, /\/brand\/favicon-nightflight-32\.png/);
   assert.match(html, /href="\/en"/);
   assert.match(html, /href="https:\/\/github.com\/LopoaySyen\/galactic-nightflight"/);
-  assert.match(html, /Apache License 2.0/);
+  assert.match(html, /MIT 许可证/);
   assert.match(html, /aria-label="首页栏目"/);
   for (const section of ['about', 'features', 'guide', 'open-source']) {
     assert.ok(html.includes(`href="#${section}"`));
@@ -129,7 +129,6 @@ test("every linked scientific contract and social image exists in public assets"
     "../public/brand/generation-notes.json",
     "../public/data/SCIENCE_DISPLAY_UPDATE.md",
     "../public/data/deep-sky-image-sources.json",
-    "../public/planet-horizon.png",
     "../public/terrain/planet-terrain-panorama-v2.webp",
     "../public/terrain/basalt-ground-texture-v1.webp",
     "../public/data/terrain-asset-source.json",

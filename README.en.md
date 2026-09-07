@@ -50,7 +50,7 @@ node scripts/export-public-source.mjs /absolute/path/to/new-directory
 
 ## License and attribution
 
-Original project contributions are licensed under [Apache License 2.0](LICENSE). Commercial use is permitted without separate approval from the author. Preserve copyright, attribution, source, license and NOTICE information as required by the license, and identify modified files.
+Original project code uses the [MIT License](LICENSE). Commercial use requires no separate author approval. Include the copyright and permission notices in all copies or substantial portions of the Software. Third-party data and imagery retain their own terms.
 
 Author: [LopoaySyen](https://github.com/LopoaySyen). Source: [Galactic Nightflight](https://github.com/LopoaySyen/galactic-nightflight).
 

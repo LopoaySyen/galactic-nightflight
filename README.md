@@ -27,7 +27,7 @@
 
 作者：[LopoaySyen](https://github.com/LopoaySyen)。公开仓库：[galactic-nightflight](https://github.com/LopoaySyen/galactic-nightflight)。
 
-本项目原创部分采用 [Apache License 2.0](LICENSE)，允许学习、修改、分享和商业使用，无需另行向作者申请授权。分发时按照许可保留版权、署名、来源、许可与 NOTICE，修改文件需注明变更。完整条款以 LICENSE 为准。
+本项目原创代码采用 [MIT 许可证](LICENSE)，允许使用、修改、分享和商业使用，无需另行授权。软件的所有副本或实质性部分须保留版权声明和许可声明。第三方数据和影像保留各自的使用条款。
 
 使用及引用说明见 [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md)，作者与来源见 [NOTICE](NOTICE)。第三方数据、照片和软件依赖保留原许可，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
