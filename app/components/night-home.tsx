@@ -19,7 +19,7 @@ export function NightHome({ language = 'zh' }: { language?: HomeLanguage }) {
       <div className="nf-intro-content"><p className="nf-eyebrow nf-intro-kicker">{en ? 'A journey through the Milky Way' : 'GALACTIC NIGHTFLIGHT'}</p>
         <h1 id="nf-title" aria-label={en ? 'Galactic Nightflight' : '银河夜航'}>{en ? <><span className="nf-wordmark-overline">Galactic</span><span className="nf-wordmark-script">Nightflight<span className="nf-wordmark-star" aria-hidden="true">✦</span></span></> : <><span className="nf-wordmark-first">银河</span><span className="nf-wordmark-second">夜航</span></>}</h1>
         <p className="nf-intro-lead"><span>{T('同一片银河，', 'One galaxy.')}</span><strong>{T('不同的星空。', 'Countless skies.')}</strong></p>
-        <p className="nf-intro-description">{T('如果站在银河另一处的星球上，抬头会看到什么？换一个位置，调好晨昏与大气，看看那里的夜空。', 'Imagine standing on a world elsewhere in the Milky Way. Move your viewpoint, choose the atmosphere, and look up.')}</p>
+        <p className="nf-intro-description">{T('如果站在银河另一处的星球上，抬头望见的是怎样的星空？', 'On a world elsewhere in the Milky Way, what would the night sky look like?')}</p>
         <div className="nf-actions"><a href="/observe" className="nf-primary">{T('开始漫游', 'Start exploring')} <span aria-hidden="true">↗</span></a><a href="#features" className="nf-text-link">{T('看看怎么玩', 'Take a look around')} <span aria-hidden="true">↓</span></a></div>
       </div>
       <div className="nf-intro-bottom"><p>{T('从太阳附近出发，去看别处的夜空。', 'Start near the Sun. Find a sky of your own.')}</p><a href="#features">{T('向下滚动', 'Scroll to explore')} <span aria-hidden="true">↓</span></a></div>
@@ -48,6 +48,6 @@ export function NightHome({ language = 'zh' }: { language?: HomeLanguage }) {
       </div>
       <aside className="nf-source-note"><h3>{T('哪些是观测，哪些是模拟？', 'What is observed, and what is simulated?')}</h3><p>{T('太阳附近有实测星表可用，远方星空则结合银河模型推算。地表和大气用于模拟异地观星的环境，并非某颗已知行星的实景。具体方法与限制见模型说明。', 'Measured star catalogues anchor the nearby sky; galactic models fill in the more distant view. Ground and atmosphere create an imagined observing environment, not a reconstruction of a particular planet.')}</p></aside>
     </section>
-    <footer className="nf-footer"><span>© 2026 LopoaySyen · Galactic Nightflight</span><span>{T('首页影像为天文摄影，穿行动画为艺术呈现。', 'Homepage photographs show astronomical observations; travel effects are artistic.')}</span></footer>
+    <footer className="nf-footer"><span>© 2026 LopoaySyen · Galactic Nightflight</span></footer>
   </main>;
 }

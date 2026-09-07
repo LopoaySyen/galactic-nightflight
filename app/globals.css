@@ -1622,8 +1622,8 @@ body:has(.nf-home) {height:auto;min-height:100vh;overflow:visible;}
 .nf-intro-content {max-width:900px;}
 .nf-intro-kicker {font-size:12px;letter-spacing:.24em;margin-bottom:25px;}
 .nf-intro h1 {font-size:clamp(74px,8.2vw,124px);font-weight:300;letter-spacing:.035em;line-height:1.15;margin-bottom:36px;}
-.nf-wordmark-first {font-weight:300;}
-.nf-wordmark-second {font-family:'Songti SC','STSong','SimSun',serif;font-weight:400;margin-left:.1em;color:#e6d9c5;}
+.nf-wordmark-first,.nf-wordmark-second {font-family:'Songti SC','STSong','SimSun',serif;font-weight:400;color:#e6d9c5;}
+.nf-wordmark-second {margin-left:.1em;}
 .nf-intro-lead {font-size:clamp(23px,2.1vw,33px);line-height:1.65;letter-spacing:.04em;margin:0 0 22px;}
 .nf-intro-lead span {color:#afbcca;}
 .nf-intro-lead strong {font-weight:400;color:#f0e5d4;}
@@ -1662,3 +1662,7 @@ body:has(.nf-home) {height:auto;min-height:100vh;overflow:visible;}
  .nf-header-actions .nf-enter{font-size:12px;padding:0 10px;}.nf-primary{padding:13px 20px;}
 }
 @media(max-width:390px){.nf-intro-lead{font-size:22px;}.nf-intro h1{font-size:60px;}.nf-english .nf-intro h1{font-size:56px;}.nf-intro-kicker{font-size:10px;}.nf-text-link{font-size:14px;}}
+
+.nf-guide-heading {max-width:none;}
+.nf-guide-heading>.nf-body {max-width:none;}
+@media(min-width:801px){.nf-home:not(.nf-english) .nf-guide-heading>.nf-body {white-space:nowrap;}}
