@@ -6,12 +6,14 @@ A three-dimensional Milky Way observatory with a quiet, photographic introductio
 
 ## Pages and controls
 
-- `/en`: English introduction, three photographic themes and four feature slides.
-- `/`: Chinese introduction, with the same theme and slideshow controls.
+- `/en`: English introduction, content navigation and feature descriptions.
+- `/`: Chinese introduction, with the same sections and feature controls.
 - `/observe`: the full-screen observatory. Its controls and tutorial currently use Chinese.
 - `/logos`: the selected Starboat logo and the original alternatives.
 
-The homepage supports manual, automatic, keyboard and touch slide navigation. Theme changes trigger a brief star-flight transition. Motion can be paused and respects reduced-motion preferences; rendering stops when a scene is off screen. The 6000-pixel Milky Way panorama and 4000-pixel nebula and galaxy photographs carry individual source credits. Homepage effects are artistic presentation and do not alter the observatory's calculations.
+The homepage has four sections: About, Features, Getting started and Source. Natural scrolling and navigation links drive one continuous photographic and star-flight scene. It has no automatic slideshow or photographic style selector. Feature controls are named Explore space, Move through time, Light & atmosphere and Find objects, with mouse and keyboard support.
+
+Motion can be paused and respects reduced-motion preferences. Drawing stops when the document is hidden or the homepage unmounts. Homepage effects are artistic and do not alter observatory calculations. The 6000-pixel Milky Way and 4000-pixel Orion and Andromeda photographs retain their credits.
 
 The observatory includes position presets, separate direction controls, a galactic-centre tracking switch, forward/reverse time, atmosphere and visual-response settings, object selection and catalogue search. First-time visitors receive a seven-step tutorial, which can be reopened from the bottom toolbar.
 

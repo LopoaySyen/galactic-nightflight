@@ -1,28 +1,54 @@
+"use client";
 import Link from 'next/link';
-import {HomeJourney} from './home-journey';
-import type {HomeLanguage} from '@/lib/landing/journey-slides';
+import { useState } from 'react';
+import { homeSections, type HomeLanguage } from '@/lib/landing/home-content';
+import { HomeFeatures } from './home-features';
+import { NightHomeEffects } from './night-home-effects';
 
-export function NightHome({language='zh'}:{language?:HomeLanguage}){
-  const en=language==='en',T=(zh:string,english:string)=>en?english:zh;
-  return <main className={`night-home ${en?'home-english':''}`} lang={en?'en':'zh-CN'}>
-    <header className="home-header"><Link href={en?'/en':'/'} className="home-wordmark"><img src="/brand/logo-starboat.webp" alt="" width="56" height="56"/><span>{T('银河夜航','Galactic Nightflight')}<small>{T('GALACTIC NIGHTFLIGHT','银河夜航')}</small></span></Link>
-      <nav aria-label={T('首页导航','Main navigation')}><a href="#about">{T('关于夜航','About')}</a><a href="#features">{T('探索方式','Explore')}</a><a href="#open-source">{T('开源信息','Open source')}</a></nav>
-      <div className="home-header-actions"><Link href={en?'/':'/en'} hrefLang={en?'zh-CN':'en'} className="home-language">{en?'中文':'English'}</Link><Link href="/observe" className="home-nav-enter">{T('进入观星平台','Observatory')} <span aria-hidden="true">↗</span></Link></div>
+export function NightHome({ language = 'zh' }: { language?: HomeLanguage }) {
+  const en = language === 'en', T = (zh: string, english: string) => en ? english : zh;
+  const [active, setActive] = useState(0);
+  return <main className={`night-home nf-home ${en ? 'nf-english' : ''}`} lang={en ? 'en' : 'zh-CN'}>
+    <NightHomeEffects language={language} onSectionChange={setActive}/>
+    <header className="nf-header">
+      <a href="#about" className="nf-brand"><img src="/brand/logo-starboat.webp" alt="" width="40" height="40"/><span>{T('银河夜航', 'Galactic Nightflight')}</span></a>
+      <nav aria-label={T('首页栏目', 'Page sections')}>{homeSections.map((section, index) => <a key={section.id} href={`#${section.id}`} aria-current={active === index ? 'location' : undefined}>{section.label[language]}</a>)}</nav>
+      <div className="nf-header-actions"><Link href={en ? '/' : '/en'} hrefLang={en ? 'zh-CN' : 'en'}>{en ? '中文' : 'EN'}</Link><Link href="/observe" className="nf-enter">{T('进入观星', 'Open observatory')}</Link></div>
     </header>
-    <HomeJourney language={language}/>
-    <section id="about" className="home-section home-introduction"><div className="home-section-label">{T('关于银河夜航','About Galactic Nightflight')}</div><div><h2>{T('星空很远。','The stars are distant.')}<br/><span>{T('出发可以很近。','Your journey starts here.')}</span></h2>
-      <p className="home-large-copy">{T('银河夜航是一座可以自由穿行的数字观星台。它将实测恒星目录、三维银河模型和深空观测影像放进同一个观察场景，让你从太阳附近出发，去银河的不同位置看看。','Galactic Nightflight is a digital observatory for exploring the Milky Way from different positions. Observed star catalogues, three-dimensional models and deep-sky photographs come together in one interactive sky.')}</p>
-      <p className="home-muted-copy">{T('这里既有观测数据，也有明确标注的模拟与艺术呈现。你看到的变化来自观察位置、天体运动、尘埃遮挡和感光方式；它是一场有依据的探索，也保留着未知。','Observed data, model estimates and artistic presentation are identified separately. Position, motion, dust and visual response all shape the view. This is an informed exploration, with its uncertainties kept visible.')}</p></div></section>
-    <section className="home-section home-highlights" aria-labelledby="highlights-title"><div className="home-section-heading"><div><p className="home-section-label">{T('功能亮点','Highlights')}</p><h2 id="highlights-title">{T('不止仰望，','More than a view.')}<span>{T('也能启航。','A place to explore.')}</span></h2></div><p>{T('让一片星空，拥有许多种看法。','One sky. Many ways to see it.')}</p></div>
-      <div className="home-highlight-grid"><article><span className="home-feature-number">01 / {T('穿行','SPACE')}</span><h3>{T('星空随你而变','A sky that changes with you')}</h3><p>{T('跳到内银河、外盘或盘面上方。位置改变后，恒星的方向、距离与亮度都会重新计算。','Move to the inner galaxy, outer disc or above the galactic plane. Stellar directions, distances and brightness are recalculated from your new position.')}</p></article>
-      <article><span className="home-feature-number">02 / {T('时间','TIME')}</span><h3>{T('看漫长，轻轻流动','Let time unfold')}</h3><p>{T('播放、暂停或反向推进模拟时间，观察恒星与观察者的运动。也可以始终将视线锁定在银河中心。','Play, pause or reverse simulated time. Follow the motion of stars and the observer, or keep your view locked on the galactic centre.')}</p></article>
-      <article><span className="home-feature-number">03 / {T('光线','LIGHT')}</span><h3>{T('换一双看见宇宙的眼睛','See through different eyes')}</h3><p>{T('在裸眼与相机之间切换，调整昼夜和大气。让同一片天空，呈现不同的明暗与色彩。','Switch between visual and camera responses. Adjust day, night and atmosphere to explore changes in light and colour.')}</p></article></div></section>
-    <section id="features" className="home-feature-section"><HomeJourney language={language} features/></section>
-    <section id="open-source" className="home-section home-open-source"><div><p className="home-section-label">{T('项目开源信息','Open-source project')}</p><h2>{T('让探索有来处，','Know where the light comes from.')}<br/><span>{T('让未知被看见。','Keep the unknown in view.')}</span></h2><p className="home-muted-copy">{T('查看源码、数据依据、模型假设和图像来源。欢迎学习、修改、分享和商业使用，使用时请保留作者、项目名称、来源与许可说明。','Explore the source code, datasets, model assumptions and image credits. Study, modify, share or use the project commercially while retaining its attribution, source and license notices.')}</p></div>
-      <div className="home-source-card"><p className="home-source-state">{T('公开源码 · 允许商业使用','Public source · Commercial use permitted')}</p><dl><div><dt>{T('代码仓库','Repository')}</dt><dd><a href="https://github.com/LopoaySyen/galactic-nightflight" target="_blank" rel="noreferrer">LopoaySyen / galactic-nightflight ↗</a></dd></div><div><dt>{T('代码许可','Code license')}</dt><dd>Apache License 2.0</dd></div><div><dt>{T('作者与来源','Author and source')}</dt><dd>{T('保留署名、来源及修改说明','Retain attribution and change notices')}</dd></div></dl>
-      <p>{T('这是允许商用的开源软件许可，无需另行向作者申请授权。分发时请保留版权、许可和来源说明，修改过的文件应注明变更。第三方星表与照片仍按各自许可使用。','This permissive open-source license allows commercial use without separate author approval. Retain copyright, license and source notices when distributing, and identify changes. Third-party data and photographs retain their own terms.')}</p>
-      <div className="home-source-links"><a href="https://github.com/LopoaySyen/galactic-nightflight" target="_blank" rel="noreferrer">{T('查看完整源码','Browse the source')} ↗</a><a href="/legal/COMMERCIAL-LICENSING.md" target="_blank" rel="noreferrer">{T('使用许可与署名','License and attribution')} ↗</a><a href="/legal/THIRD_PARTY_NOTICES.md" target="_blank" rel="noreferrer">{T('素材来源','Third-party credits')} ↗</a></div></div></section>
-    <section className="home-departure"><p className="home-section-label">{T('今夜，从这里出发','Your next night begins here')}</p><h2>{T('宇宙很大，','The universe can wait.')}<br/>{T('先看一会儿星星。','Stay with the stars a little longer.')}</h2><Link href="/observe" className="home-primary">{T('进入银河夜航','Enter Galactic Nightflight')} ↗</Link></section>
-    <footer className="home-footer"><Link href={en?'/en':'/'} className="home-wordmark"><img src="/brand/logo-starboat.webp" alt="" width="42" height="42"/><span>{T('银河夜航','Galactic Nightflight')}</span></Link><p>{T('首页采用天文观测照片，穿行与过渡动画为艺术呈现。观星平台中的实测数据、模拟与影像分别标注。','The homepage combines astronomical photographs with artistic travel transitions. The observatory distinguishes observed data, models and photographic overlays.')}</p><Link href={en?'/':'/en'}>{en?'中文':'English'}</Link></footer>
+
+    <section id="about" data-home-section className="nf-chapter nf-intro" aria-labelledby="nf-title">
+      <div className="nf-intro-content"><p className="nf-eyebrow">{en ? '银河夜航' : 'GALACTIC NIGHTFLIGHT'}</p>
+        <h1 id="nf-title">{en ? <>Galactic<br/>Nightflight</> : '银河夜航'}</h1>
+        <p className="nf-intro-lead">{T('从不同的位置，看同一个银河。', 'Explore the Milky Way from different positions.')}</p>
+        <p className="nf-intro-description">{T('一个可以移动视点、推进时间、查询天体的三维观星平台。', 'A three-dimensional observatory with position controls, simulated time and searchable star catalogues.')}</p>
+        <div className="nf-actions"><Link href="/observe" className="nf-primary">{T('进入观星平台', 'Open the observatory')} <span aria-hidden="true">↗</span></Link><a href="#features" className="nf-text-link">{T('了解功能', 'Explore features')} <span aria-hidden="true">↓</span></a></div>
+      </div>
+      <div className="nf-intro-bottom"><p>{T('实测星表 · 三维模型 · 深空影像', 'Observed catalogues · 3D models · Deep-sky images')}</p><a href="#features">{T('向下滚动', 'Scroll to explore')} <span aria-hidden="true">↓</span></a></div>
+    </section>
+
+    <section id="features" data-home-section className="nf-chapter nf-features" aria-labelledby="nf-features-title">
+      <div className="nf-section-heading"><p className="nf-eyebrow" id="nf-features-title">{T('功能', 'Features')}</p><p>{T('选择一项，看看能做什么。', 'Choose a feature to learn more.')}</p></div>
+      <HomeFeatures language={language}/>
+    </section>
+
+    <section id="guide" data-home-section className="nf-chapter nf-guide" aria-labelledby="nf-guide-title">
+      <div className="nf-guide-heading"><p className="nf-eyebrow">{T('使用', 'Getting started')}</p><h2 id="nf-guide-title">{T('先从眼前的星空开始。', 'Start with the sky in front of you.')}</h2><p className="nf-body">{T('首次进入会有基本操作引导。之后也可以从底部工具栏重新打开「新手教程」。', 'A short guide introduces the controls on your first visit. Reopen it later from the tutorial button in the bottom toolbar.')}</p></div>
+      <div className="nf-guide-grid">
+        <article><h3>{T('转动视线', 'Look around')}</h3><p>{T('按住并拖动天幕，滚轮缩放。左侧按钮可以看向银河中心、外围或盘面上下。', 'Drag the sky to turn and scroll to zoom. The left toolbar points toward the centre, outer galaxy or galactic poles.')}</p></article>
+        <article><h3>{T('移动观察位置', 'Move your position')}</h3><p>{T('打开「位置」，选择预设地点，或在银河图中自由选点。附近恒星会产生视差。', 'Open the position panel to use a preset or select a point on the galactic map. Nearby stars shift as you move.')}</p></article>
+        <article><h3>{T('查看天体资料', 'Inspect an object')}</h3><p>{T('点击天体，或搜索它的名称，查看目录信息、当前距离和资料来源。', 'Select an object or search its name to see catalogue information, its current distance and data sources.')}</p></article>
+      </div>
+      <Link href="/observe" className="nf-text-link">{T('打开观星平台', 'Open the observatory')} <span aria-hidden="true">↗</span></Link>
+    </section>
+
+    <section id="open-source" data-home-section className="nf-chapter nf-source" aria-labelledby="nf-source-title">
+      <div className="nf-source-copy"><p className="nf-eyebrow">{T('开源', 'Open source')}</p><h2 id="nf-source-title">{T('源码与数据来源', 'Source code and data')}</h2><p className="nf-body">{T('源码、运行说明和素材来源都在 GitHub。可以学习、修改、分享，也可以商业使用。', 'Find the source code, setup instructions and asset credits on GitHub. You can study, modify, share and use the project commercially.')}</p>
+        <a href="https://github.com/LopoaySyen/galactic-nightflight" className="nf-repo" target="_blank" rel="noreferrer"><span><small>LopoaySyen</small>galactic-nightflight</span><span aria-hidden="true">↗</span></a>
+        <p className="nf-note">{T('代码采用 Apache License 2.0，无需另行授权。分发时按许可保留署名、来源和修改说明。第三方星表与照片适用各自许可。', 'The code uses Apache License 2.0, with no separate author approval required. Retain attribution, source and change notices when distributing. Third-party catalogues and photographs retain their own terms.')}</p>
+        <div className="nf-source-links"><a href="/legal/COMMERCIAL-LICENSING.md" target="_blank" rel="noreferrer">{T('使用许可', 'License')}</a><a href="/legal/THIRD_PARTY_NOTICES.md" target="_blank" rel="noreferrer">{T('素材来源', 'Asset credits')}</a><a href="/data/SCIENCE_DISPLAY_UPDATE.md" target="_blank" rel="noreferrer">{T('模型说明', 'Model notes')}</a></div>
+      </div>
+      <aside className="nf-source-note"><h3>{T('哪些是观测，哪些是模拟？', 'What is observed, and what is simulated?')}</h3><p>{T('平台结合了实测恒星目录、统计模型和深空照片。运动、大气和成像仍有近似，不能把画面当作精密天文预测。具体限制保留在模型说明中。', 'The observatory combines measured star catalogues, statistical models and deep-sky photographs. Motion, atmosphere and imaging remain approximate. The model notes explain these limits.')}</p></aside>
+    </section>
+    <footer className="nf-footer"><span>© 2026 LopoaySyen · Galactic Nightflight</span><span>{T('首页影像为天文摄影，穿行动画为艺术呈现。', 'Homepage photographs show astronomical observations; travel effects are artistic.')}</span></footer>
   </main>;
 }

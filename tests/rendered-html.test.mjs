@@ -32,31 +32,36 @@ async function renderRoute(path) {
   return html;
 }
 
-test("renders a bilingual-ready slideshow homepage with public source and permissive licensing", async () => {
+test("renders content navigation and named feature controls without slideshow chrome", async () => {
   const html = await renderRoute("/");
   assert.match(html, /<title>银河夜航<\/title>/);
   assert.match(html, /class="night-home /);
-  assert.match(html, /class="home-star-flight"/);
+  assert.match(html, /class="nf-star-flight"/);
   assert.match(html, /milky-way-6000\.webp 6000w/);
   assert.match(html, /logo-starboat\.webp/);
-  for (const text of ["关于银河夜航", "功能亮点", "功能介绍", "项目开源信息", "公开源码", "代码许可", "无需另行向作者申请授权", "暂停穿行", "加速穿行"]) assert.ok(html.includes(text), text);
+  for (const text of ["银河夜航", "空间漫游", "时间推进", "感光与大气", "天体查询", "源码与数据来源", "无需另行授权", "暂停动态效果"]) assert.ok(html.includes(text), text);
   assert.match(html, /href="\/observe"/);
   assert.match(html, /\/brand\/favicon-nightflight-32\.png/);
   assert.match(html, /href="\/en"/);
   assert.match(html, /href="https:\/\/github.com\/LopoaySyen\/galactic-nightflight"/);
   assert.match(html, /Apache License 2.0/);
-  assert.match(html, /aria-label="功能介绍幻灯片"/);
-  assert.equal((html.match(/role="tablist"/g) ?? []).length, 2);
-  assert.equal((html.match(/role="tab"/g) ?? []).length, 7);
+  assert.match(html, /aria-label="首页栏目"/);
+  for (const section of ['about', 'features', 'guide', 'open-source']) {
+    assert.ok(html.includes(`href="#${section}"`));
+    assert.ok(html.includes(`id="${section}"`));
+  }
+  assert.doesNotMatch(html, /选择主题|暂停自动切换|上一张|下一张|role="carousel"|journey-tabs/);
+  assert.equal((html.match(/role="tablist"/g) ?? []).length, 1);
+  assert.equal((html.match(/role="tab"/g) ?? []).length, 4);
   assert.doesNotMatch(html, /class="planetarium-sky"/);
 });
 
 test("serves a complete English introduction with language navigation", async () => {
   const html = await renderRoute("/en");
   assert.match(html, /<main[^>]*lang="en"/);
-  for (const text of ["Galactic Nightflight", "About Galactic Nightflight", "Highlights", "Ways to explore", "Open-source project", "Previous slide", "Pause slides", "without separate author approval"]) assert.ok(html.includes(text), text);
+  for (const text of ["Galactic Nightflight", "Page sections", "Explore space", "Move through time", "Light &amp; atmosphere", "Find objects", "Source code and data", "no separate author approval"]) assert.ok(html.includes(text), text);
   assert.match(html, /href="\/" hrefLang="zh-CN"/i);
-  assert.match(html, /aria-label="Galactic journeys"/);
+  assert.match(html, /aria-label="Explore features"/);
 });
 
 test("renders the full-screen observing platform with navigation and repeatable tutorial", async () => {
