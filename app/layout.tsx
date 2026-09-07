@@ -27,11 +27,6 @@ export const metadata: Metadata = {
     description: "如果站在银河另一处的星球上，抬头会看到什么？选择位置、时间与大气，看看那里的星空。",
     images: ["/brand/nightflight-sky.webp"],
   },
-  icons: {
-    icon: [{url:"/brand/favicon-nightflight.ico",sizes:"any"},{url:"/brand/favicon-nightflight-32.png",type:"image/png",sizes:"32x32"},{url:"/brand/favicon-nightflight-16.png",type:"image/png",sizes:"16x16"}],
-    shortcut: "/brand/favicon-nightflight.ico",
-    apple: "/brand/favicon-nightflight-192.png",
-  },
 };
 
 export default function RootLayout({
@@ -41,6 +36,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
+      <head>
+        {/* Keep icon links on the requesting origin. vinext resolves metadata.icons
+            against metadataBase, which would send custom-domain visitors elsewhere. */}
+        <link rel="icon" href="/favicon.ico?v=nightflight-2" type="image/x-icon" sizes="16x16 32x32 48x48 192x192" />
+        <link rel="icon" href="/brand/favicon-nightflight-32.png?v=nightflight-2" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/brand/favicon-nightflight-16.png?v=nightflight-2" type="image/png" sizes="16x16" />
+        <link rel="shortcut icon" href="/favicon.ico?v=nightflight-2" />
+        <link rel="apple-touch-icon" href="/brand/favicon-nightflight-192.png?v=nightflight-2" sizes="192x192" />
+      </head>
       <body className="antialiased">{children}</body>
     </html>
   );

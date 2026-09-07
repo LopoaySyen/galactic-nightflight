@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
-async function renderRoute(path) {
+async function renderRoute(path, origin = "http://localhost") {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
   const response = await worker.fetch(
-    new Request(`http://localhost${path}`, {
+    new Request(`${origin}${path}`, {
       headers: { accept: "text/html" },
     }),
     {
@@ -140,4 +140,28 @@ test("every linked scientific contract and social image exists in public assets"
     const bytes = await readFile(fileUrl);
     assert.ok(bytes.byteLength > 0, `${relativePath} must not be empty`);
   }
+});
+
+
+test("tab icons resolve on the visiting domain across home and observatory routes", async () => {
+  for (const origin of ["https://nightflight.xelope.fun", "https://galactic-sky-physics.blush-eel-3740.chatgpt.site"]) {
+    for (const path of ["/", "/en", "/observe"]) {
+      const html = await renderRoute(path, origin);
+      const links = (html.match(/<link\b[^>]*>/g) ?? []).filter(tag => /rel="(?:icon|shortcut icon|apple-touch-icon)"/.test(tag));
+      assert.ok(links.length >= 3, `${origin}${path}: missing icons`);
+      for (const tag of links) {
+        const href = tag.match(/href="([^"]+)"/)?.[1];
+        assert.ok(href, tag);
+        const icon = new URL(href, origin);
+        assert.equal(icon.origin, origin, `cross-origin icon: ${tag}`);
+        assert.equal(icon.searchParams.get("v"), "nightflight-2");
+      }
+    }
+  }
+  const source = await readFile(new URL("../public/brand/favicon-nightflight.ico", import.meta.url));
+  const root = await readFile(new URL("../public/favicon.ico", import.meta.url));
+  const published = await readFile(new URL("../dist/client/favicon.ico", import.meta.url));
+  assert.deepEqual(root, source);
+  assert.deepEqual(published, source);
+  assert.deepEqual([...root.subarray(0, 4)], [0, 0, 1, 0]);
 });
