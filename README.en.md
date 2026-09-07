@@ -47,6 +47,8 @@ The website is publicly accessible. No installation is required.
 
 These screenshots show the current application in use. Observatory controls are in Chinese; the instructions below identify the corresponding controls.
 
+The website’s Getting started section includes recorded demonstrations. Only the visible, selected demo plays, with a still-image option: [Look around](public/guide/look.gif) · [Change position](public/guide/move.gif) · [Find an object](public/guide/inspect.gif).
+
 ### Move to another part of the galaxy
 
 Open “位置跳转” at the bottom and choose “内银河” (Inner galaxy). The screenshot shows the completed jump: six presets appear on the right, and the observer coordinates have changed at the lower left. Position controls determine where you are; the left-hand direction buttons determine where you look.
