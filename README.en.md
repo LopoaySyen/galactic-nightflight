@@ -18,13 +18,13 @@ In your browser · Three-dimensional travel · Observed catalogues and models ·
 
 </div>
 
-[![Milky Way panorama by ESO/S. Brunier](public/brand/milky-way-1920.webp)](https://nightflight.xelope.fun/en)
+[![Actual Galactic Nightflight interface: sky, direction controls, time playback and observation tools](docs/images/observatory.jpg)](https://nightflight.xelope.fun/observe)
 
-<sub>Milky Way photograph used on the project homepage · © ESO/S. Brunier · <a href="https://www.eso.org/public/images/eso0932a/">Original image</a> · Creative Commons Attribution 4.0 (CC BY 4.0)</sub>
+<sub>Actual observatory screenshot · Solar neighbourhood · Direction controls on the left; time and observing tools below. Click the feature screenshots below to view them at full size.</sub>
 
 ---
 
-**[About](#about) · [Features](#features) · [Start observing](#start-observing) · [Data and models](#data-and-models) · [Run locally](#run-locally) · [Contribute](#contribute) · [License](#license)**
+**[About](#about) · [Interface in action](#interface-in-action) · [Features](#features) · [Start observing](#start-observing) · [Data and models](#data-and-models) · [Run locally](#run-locally) · [Contribute](#contribute) · [License](#license)**
 
 ## About
 
@@ -43,6 +43,47 @@ Observed data, statistical models and artistic assets are identified separately.
 
 The website is publicly accessible. No installation is required.
 
+## Interface in action
+
+These screenshots show the current application in use. Observatory controls are in Chinese; the instructions below identify the corresponding controls.
+
+### Move to another part of the galaxy
+
+Open “位置跳转” at the bottom and choose “内银河” (Inner galaxy). The screenshot shows the completed jump: six presets appear on the right, and the observer coordinates have changed at the lower left. Position controls determine where you are; the left-hand direction buttons determine where you look.
+
+[![Position jump: Inner galaxy selected, with updated observer coordinates and sky](docs/images/position-jump.jpg)](docs/images/position-jump.jpg)
+
+### Adjust atmosphere and display brightness
+
+Open “观察” and scroll to “显示曝光” (Display exposure) and “行星大气” (Planetary atmosphere). Adjust display brightness, choose space, clear sky or haze, and set the horizon tilt. Twilight controls are further down the panel.
+
+[![Observation settings: display-exposure slider, three atmosphere options and horizon tilt](docs/images/atmosphere.jpg)](docs/images/atmosphere.jpg)
+
+### Search for a star and inspect its data
+
+Select “搜索天体” on the left and enter “天狼” to find Sirius. Choosing the result centres the star and opens its measured catalogue information: identifiers, distance, magnitude, estimated temperature and distance from the current observer.
+
+<table>
+  <tr>
+    <td width="50%"><strong>Enter a name and find the object</strong></td>
+    <td width="50%"><strong>Locate it and inspect its data</strong></td>
+  </tr>
+  <tr>
+    <td><a href="docs/images/object-search.jpg"><img src="docs/images/object-search.jpg" width="480" alt="Searching for Sirius by its Chinese name returns its catalogue identity" /></a></td>
+    <td><a href="docs/images/star-details.jpg"><img src="docs/images/star-details.jpg" width="480" alt="Sirius selected with observed catalogue data and current distance in the side panel" /></a></td>
+  </tr>
+</table>
+
+Click either image to read it at full size. Search also accepts English names and identifiers from loaded catalogues.
+
+### Explore a nebula and its image source
+
+In “观察”, choose “猎户座大星云 · 特写” (Orion Nebula close-up). The camera view opens with the object's distance, alternative names and a link to the original image. Catalogue targets also include star clusters and galaxies.
+
+[![Orion Nebula camera close-up with object distances and photographic source information](docs/images/nebula-details.jpg)](docs/images/nebula-details.jpg)
+
+<sub>Nebula imagery in the screenshot: © ESO/G. Beccari · <a href="https://www.eso.org/public/images/eso1723a/">Original photograph</a> · Creative Commons Attribution 4.0 (CC BY 4.0). Photographic colours in the camera close-up do not represent naked-eye vision.</sub>
+
 ## Features
 
 | Feature | What it does |
@@ -60,7 +101,7 @@ Scrolling and navigation on the homepage drive a continuous star-flight scene. M
 ## Start observing
 
 1. **Open the observatory and follow the guide.** The [observatory](https://nightflight.xelope.fun/observe) offers a seven-step tutorial on first visit. Reopen it with “新手教程” in the bottom toolbar.
-2. **Change position and compare the sky.** Open “位置” and move from the solar neighbourhood to the inner disc or above the plane. Buttons on the left change where you look; the position panel changes where you are.
+2. **Change position and compare the sky.** Open “位置跳转” and move from the solar neighbourhood to the inner disc or above the plane. Buttons on the left change where you look; the position panel changes where you are.
 3. **Choose your observing conditions.** Open “观察” to adjust visual response, twilight and atmosphere. Start with time paused to compare parallax, then play to explore motion.
 
 ### Six starting points
@@ -86,7 +127,7 @@ These presets define galactic coordinates. The planetary terrain is a hypothetic
 | `/` | Open object search |
 | `Esc` | Close search or object selection |
 | Arrow keys, `+` / `-` | Turn or zoom while the sky canvas has focus |
-| “锁定银河中心” | Track the galactic centre during travel or time playback |
+| “锁定中心” | Track the galactic centre during travel or time playback |
 | “新手教程” | Reopen the tutorial; completion is saved in the current browser |
 
 Turn off centre lock to look freely. If you cannot find an object, check whether it is in the loaded catalogue and above the current horizon.
