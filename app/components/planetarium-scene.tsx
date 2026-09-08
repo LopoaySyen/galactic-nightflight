@@ -66,9 +66,9 @@ import { blendDeepSkyPhoto } from "@/lib/rendering/deep-sky-composite";
 import { StarDetail } from "./star-detail";
 import { DeepSkyDetail } from "./deep-sky-detail";
 import { CompactObjectDetail } from './compact-object-detail';
-import { compactObjects, compactObjectsById, compactViewObserver, type CompactObject } from '@/lib/rendering/compact-object-catalog';
+import { compactObjects, compactObjectsById, compactObjectAtTime, compactViewObserver, type CompactObject } from '@/lib/rendering/compact-object-catalog';
 import { lensView, SCHWARZSCHILD_PARSEC_PER_SOLAR_MASS } from '@/lib/physics/gravitational-lensing';
-import {blackHoleCameraExposure} from '@/lib/physics/schwarzschild';
+import {kerrCameraExposure} from '@/lib/physics/kerr';
 import {createCompactGpuRenderer,nearestResolvedCompact,type CompactGpuRenderer} from '@/lib/rendering/compact-object-gpu';
 import { SkySearch } from "./sky-search";
 import { buildSkySearchIndex, type SkySearchEntry } from "@/lib/rendering/sky-search";
@@ -203,11 +203,16 @@ function PlanetariumView() {
   const [displayExposureStops, setDisplayExposureStops] = useState(0.5);
   const [navigationNotice, setNavigationNotice] = useState("");
   const [centreLocked,setCentreLocked]=useState(false);
-  const [discOrigin,setDiscOrigin]=useState<{position:Vector3;camera:ViewCamera;atmosphere:AtmospherePreset;centreLocked:boolean;exposure:number;mode:ObservationMode;follows:boolean;kind:'disc'|'black-hole'}|null>(null);
+  const [discOrigin,setDiscOrigin]=useState<{position:Vector3;camera:ViewCamera;atmosphere:AtmospherePreset;centreLocked:boolean;exposure:number;mode:ObservationMode;follows:boolean;timeYears:number;kind:'disc'|'black-hole'}|null>(null);
   const [blackHoleAccretionLog,setBlackHoleAccretionLog]=useState(-2);
   const [blackHoleBolometric,setBlackHoleBolometric]=useState(true);
   const [blackHoleArtistic,setBlackHoleArtistic]=useState(true);
   const [blackHoleSkyExposure,setBlackHoleSkyExposure]=useState(1.5);
+  const [blackHoleSpins,setBlackHoleSpins]=useState<Record<string,number>>({});
+  const [discFlowing,setDiscFlowing]=useState(true);
+  const [discFlowSpeed,setDiscFlowSpeed]=useState(1);
+  const nearFollowRef=useRef<{id:string;offset:Vector3}|null>(null);
+  const liveCompactObjects=useMemo(()=>compactObjects.map(base=>({...compactObjectAtTime(base,simulationTimeYears),spin:blackHoleSpins[base.id]??base.spin})),[simulationTimeYears,blackHoleSpins]);
   const [tutorialStep,setTutorialStep]=useState<number|null>(null);
   const [minimalInterface, setMinimalInterface] = useState(false);
   const atmosphereZenith = useMemo(() => localZenith(planetInclinationDegrees), [planetInclinationDegrees]);
@@ -240,6 +245,9 @@ function PlanetariumView() {
   const terrainCanvasRef = useRef<HTMLCanvasElement>(null);
   const compactCanvasRef = useRef<HTMLCanvasElement>(null);
   const compactGpuRef = useRef<CompactGpuRenderer|null>(null);
+  const allSkyStarsRef=useRef<HTMLCanvasElement|null>(null);
+  const allSkyStarsGpuRef=useRef<StarGpuRenderer|null>(null);
+  const allSkyStarsKeyRef=useRef('');
   const starsGpuRef = useRef<StarGpuRenderer | null>(null);
   const backgroundGpuRef = useRef<SkyBackgroundGpuRenderer | null>(null);
   const uploadedSourcesRef = useRef<typeof preparedGalaxyPointSources>(undefined);
@@ -249,7 +257,7 @@ function PlanetariumView() {
   const [renderError, setRenderError] = useState("");
   const [searchOpen,setSearchOpen]=useState(false);
   const [selectedCompactId,setSelectedCompactId]=useState<string|null>(null);
-  const selectedCompact=selectedCompactId?compactObjectsById.get(selectedCompactId):undefined;
+  const selectedCompact=liveCompactObjects.find(object=>object.id===selectedCompactId);
   const [selectedDeepSkyId,setSelectedDeepSkyId]=useState<string|null>(null);
   const selectedDeepSky=selectedDeepSkyId?deepSkyTargetsById.get(selectedDeepSkyId):undefined;
   const searchButtonRef=useRef<HTMLButtonElement>(null);
@@ -340,26 +348,37 @@ function PlanetariumView() {
 
   useEffect(() => {
     if (compactCanvasRef.current) compactGpuRef.current=createCompactGpuRenderer(compactCanvasRef.current);
+    allSkyStarsRef.current=document.createElement('canvas');
+    allSkyStarsGpuRef.current=createStarGpuRenderer(allSkyStarsRef.current);
     if (starCanvasRef.current) starsGpuRef.current = createStarGpuRenderer(starCanvasRef.current);
     if (skyBackgroundRef.current) backgroundGpuRef.current = createSkyBackgroundGpuRenderer(skyBackgroundRef.current);
-    return () => { compactGpuRef.current?.dispose();compactGpuRef.current=null; starsGpuRef.current?.dispose(); backgroundGpuRef.current?.dispose();
+    return () => { allSkyStarsGpuRef.current?.dispose();allSkyStarsGpuRef.current=null;allSkyStarsRef.current=null; compactGpuRef.current?.dispose();compactGpuRef.current=null; starsGpuRef.current?.dispose(); backgroundGpuRef.current?.dispose();
       starsGpuRef.current = null; backgroundGpuRef.current = null; uploadedSourcesRef.current = undefined; uploadedBackgroundRef.current = null; };
   }, []);
 
-  const relocateObserver = useCallback((positionParsec: Vector3) => {
+  useEffect(()=>{
+    if(!discFlowing||reducedMotion||!blackHoleArtistic||atmospherePreset!=='space')return;
+    let frame=0,last=0;
+    const animate=(now:number)=>{if(!document.hidden&&last)compactGpuRef.current?.animateDisc(Math.min(.1,(now-last)/1000)*discFlowSpeed);last=now;frame=requestAnimationFrame(animate);};
+    frame=requestAnimationFrame(animate);return()=>cancelAnimationFrame(frame);
+  },[discFlowing,discFlowSpeed,reducedMotion,blackHoleArtistic,atmospherePreset]);
+
+  const relocateObserver = useCallback((positionParsec: Vector3, preserveTime=false) => {
+    if(!preserveTime)nearFollowRef.current=null;
     const velocityKilometresPerSecond = circularVelocityAtPosition(positionParsec);
     observerDynamicsRef.current = { positionParsec, velocityKilometresPerSecond };
     observerEpochRef.current = { positionParsec, velocityKilometresPerSecond };
     setObserverPositionParsec(positionParsec);
     setObserverVelocityKilometresPerSecond(velocityKilometresPerSecond);
-    simulationTimeRef.current = 0;
-    setSimulationTimeYears(0);
+    if(!preserveTime){simulationTimeRef.current=0;setSimulationTimeYears(0);}
     setIsTimePlaying(false);
   }, []);
 
   const resetSimulationTime = useCallback(() => {
-    observerDynamicsRef.current = observerEpochRef.current;
-    setObserverPositionParsec(observerEpochRef.current.positionParsec);
+    const follow=nearFollowRef.current,base=follow?compactObjectsById.get(follow.id):undefined;
+    const position=base&&follow?{x:base.positionParsec.x+follow.offset.x,y:base.positionParsec.y+follow.offset.y,z:base.positionParsec.z+follow.offset.z}:observerEpochRef.current.positionParsec;
+    observerDynamicsRef.current = {...observerEpochRef.current,positionParsec:position};
+    setObserverPositionParsec(position);
     setObserverVelocityKilometresPerSecond(observerEpochRef.current.velocityKilometresPerSecond);
     simulationTimeRef.current = 0;
     setSimulationTimeYears(0);
@@ -389,7 +408,13 @@ function PlanetariumView() {
         const nextTime = clamp(currentTime + accumulatedElapsedYears, -MAXIMUM_SIMULATION_TIME_YEARS, MAXIMUM_SIMULATION_TIME_YEARS);
         const appliedElapsedYears = nextTime - currentTime;
         simulationTimeRef.current = nextTime;
-        if (observerFollowsDynamics && appliedElapsedYears !== 0) {
+        const follow=nearFollowRef.current;
+        if(follow){
+          const object=compactObjectAtTime(compactObjectsById.get(follow.id)!,nextTime);
+          const position={x:object.positionParsec.x+follow.offset.x,y:object.positionParsec.y+follow.offset.y,z:object.positionParsec.z+follow.offset.z};
+          observerDynamicsRef.current={positionParsec:position,velocityKilometresPerSecond:object.velocityKilometresPerSecond};
+          setObserverPositionParsec(position);setObserverVelocityKilometresPerSecond(object.velocityKilometresPerSecond);
+        }else if (observerFollowsDynamics && appliedElapsedYears !== 0) {
           const nextObserverState = integratePhaseSpaceLeapfrog(observerDynamicsRef.current, appliedElapsedYears);
           observerDynamicsRef.current = nextObserverState;
           setObserverPositionParsec(nextObserverState.positionParsec);
@@ -614,8 +639,8 @@ function PlanetariumView() {
   const drawSky = useCallback(() => {
     // Show every layer from the same completed observer position while the next
     // dust integral is pending. Never combine an old dust sky with new parallax.
-    const displayPosition=compactViewObserver(observerPositionParsec,skyComputation?.position);
-    const displayLens=compactObjects.map(object=>lensView(object,displayPosition)).filter(view=>view!==null).sort((a,b)=>b.strength-a.strength)[0]??null;
+    const displayPosition=nearFollowRef.current?observerPositionParsec:compactViewObserver(observerPositionParsec,skyComputation?.position,liveCompactObjects);
+    const displayLens=liveCompactObjects.map(object=>lensView(object,displayPosition)).filter(view=>view!==null).sort((a,b)=>b.strength-a.strength)[0]??null;
     const artisticCloseUp=blackHoleArtistic&&atmospherePreset==='space'&&!!displayLens&&displayLens.distance<1&&2/displayLens.strength>=65&&2/displayLens.strength<=1e6;
     if(displayLens)displayLens.discEdgeFade=artisticCloseUp;
     // The artwork composites independently exposed starlight and accretion light.
@@ -631,6 +656,7 @@ function PlanetariumView() {
       canvas.width = width;
       canvas.height = height;
     }
+    const resolvedCompact=scope==='galaxy-prediction'&&atmospherePreset==='space'&&compactGpuRef.current?nearestResolvedCompact(liveCompactObjects,displayPosition,camera,width,height):undefined;
     const context = canvas.getContext("2d");
     if (!context) return;
 
@@ -660,11 +686,20 @@ function PlanetariumView() {
     const starsGpu = starsGpuRef.current;
     if (preparedGalaxyPointSources && starsGpu && uploadedSourcesRef.current !== preparedGalaxyPointSources) {
       starsGpu.setSources(preparedGalaxyPointSources, skyPoints?.position ?? INITIAL_OBSERVER_POSITION);
+      allSkyStarsGpuRef.current?.setSources(preparedGalaxyPointSources,skyPoints?.position??INITIAL_OBSERVER_POSITION);
+      allSkyStarsKeyRef.current='';
       uploadedSourcesRef.current = preparedGalaxyPointSources;
+    }
+    if(resolvedCompact&&allSkyStarsGpuRef.current&&allSkyStarsRef.current){
+      const key=[displayPosition.x,displayPosition.y,displayPosition.z,simulationTimeYears,starExposure,observationMode,displayLens?.distance].join('|');
+      if(key!==allSkyStarsKeyRef.current){
+        allSkyStarsGpuRef.current.render(camera,displayPosition,simulationTimeYears,4096,2048,1,atmosphereZenith,'space',observationMode,starExposure,-18,0,false,null,true,-(displayLens?.distance??0));
+        compactGpuRef.current?.setStars(allSkyStarsRef.current);allSkyStarsKeyRef.current=key;
+      }
     }
     const starsOnGpu = scope === "galaxy-prediction" && !!starsGpu?.render(camera,
       displayPosition, simulationTimeYears, width, height, pixelRatio, atmosphereZenith, atmospherePreset,
-      observationMode, starExposure, sunAltitudeDegrees, scintillationTimeRef.current, scintillationActive, displayLens);
+      observationMode, starExposure, sunAltitudeDegrees, scintillationTimeRef.current, scintillationActive, resolvedCompact?null:displayLens,false,resolvedCompact?(displayLens?.distance??0):0);
     if (starCanvasRef.current) starCanvasRef.current.style.visibility = starsOnGpu ? "visible" : "hidden";
 
     if (scope === "galaxy-prediction" && !backgroundOnGpu) {
@@ -1056,12 +1091,11 @@ function PlanetariumView() {
     }
     context.globalCompositeOperation = "source-over";
 
-    if (scope === "galaxy-prediction" && showBenchmarkLabels) {
+    if (scope === "galaxy-prediction" && showBenchmarkLabels && !resolvedCompact) {
       const namedStars = projectPreparedGalaxyPointSources(namedPreparedStars, camera, width, height, displayPosition, simulationTimeYears, displayLens);
       drawObservedStarLabels(context, namedStars, pixelRatio, width, height, atmosphereZenith, atmospherePreset, observationMode, sunAltitudeDegrees, language);
     }
-    const resolvedCompact=scope==='galaxy-prediction'&&atmospherePreset==='space'?nearestResolvedCompact(compactObjects,displayPosition,camera,width,height):undefined;
-    const compactOnGpu=compactGpuRef.current?.render(resolvedCompact,displayPosition,camera,Math.min(width,1600),Math.round(Math.min(width,1600)*height/width),displayExposureStops,10**blackHoleAccretionLog,blackHoleBolometric,blackHoleArtistic,backgroundExposure);
+    const compactOnGpu=compactGpuRef.current?.render(resolvedCompact,displayPosition,camera,Math.min(width,1600),Math.round(Math.min(width,1600)*height/width),displayExposureStops,10**blackHoleAccretionLog,blackHoleBolometric,blackHoleArtistic,backgroundExposure,nearFollowRef.current?.id===resolvedCompact?.id?nearFollowRef.current?.offset:undefined);
     if(compactCanvasRef.current)compactCanvasRef.current.style.visibility=compactOnGpu?'visible':'hidden';
     const selectedObjectPosition=selectedStar?pointSourcePositionAtTime(selectedStar,simulationTimeYears):selectedDeepSky?.positionParsec??selectedCompact?.positionParsec;
     if(scope==="galaxy-prediction"&&selectedObjectPosition&&!resolvedCompact){
@@ -1153,7 +1187,7 @@ function PlanetariumView() {
         context.drawImage(projectionCanvas, 0, 0, width, height);
       }
     }
-  }, [atmospherePreset, atmosphereZenith, camera, displayExposureStops, planetInclinationDegrees, simulationTimeYears, skyComputation, skyPoints, deepSkyAssetVersion, drawCurve, enhanceDeepSkyScale, galaxyColourGrade, isSkyDragging, observationMode, observerPositionParsec, planetTerrainAssetVersion, preparedExtragalacticSources, preparedGalaxyPointSources, namedPreparedStars, selectedStar, selectedDeepSky, selectedCompact, scope, showBenchmarkLabels, showDeepSkyImages, showCoordinateGrid, showExtragalactic, showGalacticPlane, sunAltitudeDegrees, sunDirection, language, t, scintillationActive, blackHoleAccretionLog, blackHoleBolometric, blackHoleArtistic, blackHoleSkyExposure]);
+  }, [atmospherePreset, atmosphereZenith, camera, displayExposureStops, planetInclinationDegrees, simulationTimeYears, skyComputation, skyPoints, deepSkyAssetVersion, drawCurve, enhanceDeepSkyScale, galaxyColourGrade, isSkyDragging, observationMode, observerPositionParsec, planetTerrainAssetVersion, preparedExtragalacticSources, preparedGalaxyPointSources, namedPreparedStars, selectedStar, selectedDeepSky, selectedCompact, scope, showBenchmarkLabels, showDeepSkyImages, showCoordinateGrid, showExtragalactic, showGalacticPlane, sunAltitudeDegrees, sunDirection, language, t, scintillationActive, blackHoleAccretionLog, blackHoleBolometric, blackHoleArtistic, blackHoleSkyExposure, liveCompactObjects]);
 
   const scheduleDraw = useCallback(() => {
     if (drawRequestRef.current !== null) return;
@@ -1231,7 +1265,8 @@ function PlanetariumView() {
     setNavigationNotice(target.switchToSpace?"目标被地平线遮挡，已暂停时间并切换为无大气视图。":source.image?"已暂停时间并进入相机特写；照片色彩不代表裸眼颜色。":"已暂停时间并定位目标。暗弱天体可能需要提高感光或曝光设置。");
   };
   const focusCompact=(object:CompactObject,visit=false,faceOn=false)=>{
-    if(!discOrigin)setDiscOrigin({position:{...observerPositionParsec},camera:{...camera},atmosphere:atmospherePreset,centreLocked,exposure:displayExposureStops,mode:observationMode,follows:observerFollowsDynamics,kind:'black-hole'});
+    object=liveCompactObjects.find(live=>live.id===object.id)??object;
+    if(!discOrigin)setDiscOrigin({position:{...observerPositionParsec},camera:{...camera},atmosphere:atmospherePreset,centreLocked,exposure:displayExposureStops,mode:observationMode,follows:observerFollowsDynamics,timeYears:simulationTimeYears,kind:'black-hole'});
 
     cancelSkyPointer();setCentreLocked(false);setIsTimePlaying(false);setScope('galaxy-prediction');
     setSelectedStarId(null);setSelectedDeepSkyId(null);setSelectedCompactId(object.id);setSearchOpen(false);setActivePanel(null);
@@ -1239,13 +1274,15 @@ function PlanetariumView() {
     if(visit){
       const distance=180*SCHWARZSCHILD_PARSEC_PER_SOLAR_MASS*object.massSolar;
       observer={x:object.positionParsec.x-distance*Math.cos(faceOn?1.35:.21),y:object.positionParsec.y,z:object.positionParsec.z+distance*Math.sin(faceOn?1.35:.21)};
-      setDisplayExposureStops(blackHoleCameraExposure(object.massSolar,10**blackHoleAccretionLog,blackHoleArtistic||blackHoleBolometric));
-      relocateObserver(observer);setObserverFollowsDynamics(false);setAtmospherePreset('space');setObservationMode('camera');
+      setDisplayExposureStops(kerrCameraExposure(object.massSolar,object.spin,10**blackHoleAccretionLog,blackHoleArtistic||blackHoleBolometric));
+      nearFollowRef.current={id:object.id,offset:{x:-distance*Math.cos(faceOn?1.35:.21),y:0,z:distance*Math.sin(faceOn?1.35:.21)}};
+      relocateObserver(observer,true);setObserverFollowsDynamics(false);setAtmospherePreset('space');setObservationMode('camera');
     }
-    const target=resolveQuickView({x:object.positionParsec.x-observer.x,y:object.positionParsec.y-observer.y,z:object.positionParsec.z-observer.z},camera,atmosphereZenith,atmospherePreset!=='space');
+    const direction=visit?{x:Math.cos(faceOn?1.35:.21),y:0,z:-Math.sin(faceOn?1.35:.21)}:{x:object.positionParsec.x-observer.x,y:object.positionParsec.y-observer.y,z:object.positionParsec.z-observer.z};
+    const target=resolveQuickView(direction,camera,atmosphereZenith,atmospherePreset!=='space');
     setCamera({...target.camera,horizontalFieldOfViewDegrees:visit?(faceOn?38:28):30});
     if(target.switchToSpace)setAtmospherePreset('space');
-    setNavigationNotice(visit?(language==='en'?'Schwarzschild ray tracing · physical thin disc · reduced camera exposure. Time paused.':'史瓦西光线追踪 · 物理薄盘 · 已降低相机曝光，时间暂停。'):(language==='en'?'Black-hole direction marked. Its true angular size is usually below naked-eye resolution.':'已标记黑洞方向；其真实角大小通常远低于肉眼分辨能力。'));
+    setNavigationNotice(visit?(language==='en'?'Kerr spacetime · flowing disc. Galactic time is paused; the close-up follows the black hole.':'克尔时空 · 吸积盘持续流动。银河时间已暂停；播放后近景镜头跟随黑洞移动。'):(language==='en'?'Black-hole direction marked. Its true angular size is usually below naked-eye resolution.':'已标记黑洞方向；其真实角大小通常远低于肉眼分辨能力。'));
   };
   const selectSearchResult=(entry:SkySearchEntry)=>{
     if(entry.kind==="deep-sky"){const target=deepSkyTargetsById.get(entry.id);if(target)focusDeepSky(target);return;}
@@ -1273,7 +1310,7 @@ function PlanetariumView() {
     y: -observerPositionParsec.y, z: -observerPositionParsec.z }, "银河中心");
   const lookTowardOuterGalaxy = () => navigateToDirection(observerPositionParsec, "银河外围");
   const viewDiscFrom = (side: 1 | -1) => {
-    if(!discOrigin)setDiscOrigin({position:Math.abs(observerPositionParsec.z)<1000?{...observerPositionParsec}:{...observerPositionParsec,z:0},camera:{...camera},atmosphere:atmospherePreset,centreLocked,exposure:displayExposureStops,mode:observationMode,follows:observerFollowsDynamics,kind:'disc'});
+    if(!discOrigin)setDiscOrigin({position:Math.abs(observerPositionParsec.z)<1000?{...observerPositionParsec}:{...observerPositionParsec,z:0},camera:{...camera},atmosphere:atmospherePreset,centreLocked,exposure:displayExposureStops,mode:observationMode,follows:observerFollowsDynamics,timeYears:simulationTimeYears,kind:'disc'});
     const overview = galacticDiscOverview(observerPositionParsec, side);
     cancelSkyPointer(); setScope('galaxy-prediction'); relocateObserver(overview.position);
     setAtmospherePreset('space'); setCentreLocked(true); setCamera(overview.camera);
@@ -1285,7 +1322,7 @@ function PlanetariumView() {
     const position=discOrigin?.position??{...observerPositionParsec,z:0};
     relocateObserver(position);setCamera(discOrigin?.camera??cameraFacingGalacticCentre(position,{...camera,horizontalFieldOfViewDegrees:82}));
     setAtmospherePreset(discOrigin?.atmosphere??'space');setCentreLocked(discOrigin?.centreLocked??true);
-    if(discOrigin){setDisplayExposureStops(discOrigin.exposure);setObservationMode(discOrigin.mode);setObserverFollowsDynamics(discOrigin.follows);}
+    if(discOrigin){setDisplayExposureStops(discOrigin.exposure);setObservationMode(discOrigin.mode);setObserverFollowsDynamics(discOrigin.follows);simulationTimeRef.current=discOrigin.timeYears;setSimulationTimeYears(discOrigin.timeYears);}
     setDiscOrigin(null);setSelectedCompactId(null);setActivePanel(null);setNavigationNotice('已返回出发位置，并恢复原来的视角和曝光。时间已暂停。');
   };
 
@@ -1353,14 +1390,17 @@ function PlanetariumView() {
             if(atmospherePreset!=="space"&&isSkyPointObscured(camera,rect.width,rect.height,gesture.x-rect.left,gesture.y-rect.top,planetInclinationDegrees,planetPanoramaRasterRef.current)){
               setSelectedStarId(null);setSelectedDeepSkyId(null);setSelectedCompactId(null);setNavigationNotice("这里是被地表遮挡的方向。可以通过搜索定位天体。");return;
             }
-            const displayedPosition=compactViewObserver(observerPositionParsec,skyComputation?.position);
-            const displayedLens=compactObjects.map(object=>lensView(object,displayedPosition)).filter(view=>view!==null).sort((a,b)=>b.strength-a.strength)[0]??null;
+            const displayedPosition=nearFollowRef.current?observerPositionParsec:compactViewObserver(observerPositionParsec,skyComputation?.position,liveCompactObjects);
+            const displayedLens=liveCompactObjects.map(object=>lensView(object,displayedPosition)).filter(view=>view!==null).sort((a,b)=>b.strength-a.strength)[0]??null;
             if(displayedLens)displayedLens.discEdgeFade=blackHoleArtistic&&atmospherePreset==='space';
-            const hit=pickObservedStar(preparedGalaxyPointSources??[],camera,displayedPosition,simulationTimeYears,
-              rect.width,rect.height,gesture.x-rect.left,gesture.y-rect.top,gesture.pointerType==="touch"?22:12,
-              atmosphereZenith,atmospherePreset,observationMode,sunAltitudeDegrees,displayedLens);
+            const resolved=atmospherePreset==='space'&&compactGpuRef.current?nearestResolvedCompact(liveCompactObjects,displayedPosition,camera,rect.width,rect.height):undefined;
+            const ray=resolved?compactGpuRef.current?.sourceDirectionAtPixel((gesture.x-rect.left)/rect.width,(gesture.y-rect.top)/rect.height):null;
+            const pickCamera=ray?{azimuthDegrees:Math.atan2(ray.y,ray.x)*180/Math.PI,elevationDegrees:Math.asin(clamp(ray.z,-1,1))*180/Math.PI,horizontalFieldOfViewDegrees:2}:camera;
+            const hit=resolved&&!ray?null:pickObservedStar(preparedGalaxyPointSources??[],pickCamera,displayedPosition,simulationTimeYears,
+              rect.width,rect.height,ray?rect.width/2:gesture.x-rect.left,ray?rect.height/2:gesture.y-rect.top,ray?rect.width*.06:gesture.pointerType==="touch"?22:12,
+              atmosphereZenith,atmospherePreset,observationMode,sunAltitudeDegrees,resolved?null:displayedLens);
             const ratioX=event.currentTarget.width/rect.width,ratioY=event.currentTarget.height/rect.height;
-            const deepHit=pickDeepSkyTarget(deepSkyHitAreasRef.current,(gesture.x-rect.left)*ratioX,(gesture.y-rect.top)*ratioY,(gesture.pointerType==="touch"?12:7)*ratioX);
+            const deepHit=resolved?null:pickDeepSkyTarget(deepSkyHitAreasRef.current,(gesture.x-rect.left)*ratioX,(gesture.y-rect.top)*ratioY,(gesture.pointerType==="touch"?12:7)*ratioX);
             const tightStar=hit&&Math.hypot(hit.canvasX-(gesture.x-rect.left),hit.canvasY-(gesture.y-rect.top))<=(gesture.pointerType==="touch"?8:4);
             if(deepHit&&!tightStar){setSelectedCompactId(null);setSelectedDeepSkyId(deepHit.id);setSelectedStarId(null);setSearchOpen(false);setActivePanel(null);setNavigationNotice("");}
             else if(hit&&observedStarsById.has(hit.id)){setSelectedCompactId(null);setSelectedStarId(hit.id);setSelectedDeepSkyId(null);setSearchOpen(false);setActivePanel(null);setNavigationNotice("");}
@@ -1390,12 +1430,14 @@ function PlanetariumView() {
       {tutorialStep!==null&&<ObservationTutorial step={tutorialStep} onStep={changeTutorialStep} onClose={finishTutorial}/>}
       {searchOpen&&<SkySearch index={searchIndex} loading={catalogueState==="loading"||gaiaCatalogueState==="loading"} failed={catalogueState==="failed"||gaiaCatalogueState==="failed"} onSelect={selectSearchResult} onClose={closeSearch}/>}
       {selectedCompact&&!searchOpen&&!activePanel&&<CompactObjectDetail
+        flowing={discFlowing&&!reducedMotion} flowSpeed={discFlowSpeed} onFlowChange={value=>{setDiscFlowing(value);if(value)setReducedMotion(false);}} onFlowSpeedChange={setDiscFlowSpeed}
+        onSpinChange={value=>{setBlackHoleSpins(current=>({...current,[selectedCompact.id]:value}));if(nearFollowRef.current?.id===selectedCompact.id)setDisplayExposureStops(kerrCameraExposure(selectedCompact.massSolar,value,10**blackHoleAccretionLog,blackHoleArtistic||blackHoleBolometric));}}
         object={selectedCompact} observer={observerPositionParsec} onClose={()=>setSelectedCompactId(null)}
         onCentre={()=>focusCompact(selectedCompact)} onVisit={()=>focusCompact(selectedCompact,true)} onFaceOn={()=>focusCompact(selectedCompact,true,true)}
         accretionLog={blackHoleAccretionLog} onAccretionChange={setBlackHoleAccretionLog}
         artistic={blackHoleArtistic} skyExposure={blackHoleSkyExposure} onSkyExposureChange={setBlackHoleSkyExposure}
-        onArtisticChange={value=>{setBlackHoleArtistic(value);if(Math.hypot(selectedCompact.positionParsec.x-observerPositionParsec.x,selectedCompact.positionParsec.y-observerPositionParsec.y,selectedCompact.positionParsec.z-observerPositionParsec.z)<1)setDisplayExposureStops(blackHoleCameraExposure(selectedCompact.massSolar,10**blackHoleAccretionLog,value||blackHoleBolometric));}}
-        bolometric={blackHoleBolometric} onBandChange={value=>{setBlackHoleBolometric(value);if(Math.hypot(selectedCompact.positionParsec.x-observerPositionParsec.x,selectedCompact.positionParsec.y-observerPositionParsec.y,selectedCompact.positionParsec.z-observerPositionParsec.z)<1)setDisplayExposureStops(blackHoleCameraExposure(selectedCompact.massSolar,10**blackHoleAccretionLog,value));}}/>}
+        onArtisticChange={value=>{setBlackHoleArtistic(value);if(Math.hypot(selectedCompact.positionParsec.x-observerPositionParsec.x,selectedCompact.positionParsec.y-observerPositionParsec.y,selectedCompact.positionParsec.z-observerPositionParsec.z)<1)setDisplayExposureStops(kerrCameraExposure(selectedCompact.massSolar,selectedCompact.spin,10**blackHoleAccretionLog,value||blackHoleBolometric));}}
+        bolometric={blackHoleBolometric} onBandChange={value=>{setBlackHoleBolometric(value);if(Math.hypot(selectedCompact.positionParsec.x-observerPositionParsec.x,selectedCompact.positionParsec.y-observerPositionParsec.y,selectedCompact.positionParsec.z-observerPositionParsec.z)<1)setDisplayExposureStops(kerrCameraExposure(selectedCompact.massSolar,selectedCompact.spin,10**blackHoleAccretionLog,value));}}/>}
       {selectedDeepSky&&<DeepSkyDetail target={selectedDeepSky} observer={observerPositionParsec} onClose={()=>setSelectedDeepSkyId(null)} onCentre={()=>focusDeepSky(selectedDeepSky)}/>}
       {selectedStar && <StarDetail source={selectedStar} observer={observerPositionParsec} timeYears={simulationTimeYears}
         onClose={() => setSelectedStarId(null)} onCentre={() => {
@@ -1520,7 +1562,7 @@ function PlanetariumView() {
             <section data-guide="positions" className="observer-presets" aria-label={t("观察位置跳转")}>
               <h3>{t("选择出发位置")}</h3><p>{t("点击坐标会移动观察者，暂停并重置时间。朝向保持不变；开启中心锁定时，朝向会持续跟随银河中心。")}</p>
               <p>{t("坐标依次为横向、纵向、垂直方向，单位都是秒差距。1 秒差距约为 3.26 光年；正负号表示方向，绝对值越大表示离对应坐标平面越远，没有优劣之分。")}</p>
-              <div>{observerPresets.map(preset=><button key={preset.id} type="button" aria-pressed={Math.hypot(observerPositionParsec.x-preset.position.x,observerPositionParsec.y-preset.position.y,observerPositionParsec.z-preset.position.z)<.001} onClick={()=>{cancelSkyPointer();setScope("galaxy-prediction");if(preset.id==="above-disc"||preset.id==="below-disc"){if(!discOrigin)setDiscOrigin({position:Math.abs(observerPositionParsec.z)<1000?{...observerPositionParsec}:{...observerPositionParsec,z:0},camera:{...camera},atmosphere:atmospherePreset,centreLocked,exposure:displayExposureStops,mode:observationMode,follows:observerFollowsDynamics,kind:'disc'});}else{if(discOrigin){setDisplayExposureStops(discOrigin.exposure);setObservationMode(discOrigin.mode);setObserverFollowsDynamics(discOrigin.follows);}setDiscOrigin(null);}relocateObserver({...preset.position});if(preset.id==='above-disc'||preset.id==='below-disc'){setAtmospherePreset('space');setCentreLocked(true);setCamera(cameraFacingGalacticCentre(preset.position,{...camera,horizontalFieldOfViewDegrees:100}));}setNavigationNotice(`已跳转至${t(preset.name)}，模拟时间已归零。${preset.id==="above-disc"||preset.id==="below-disc"?"已回望并锁定银河中心。":centreLocked?"继续锁定银河中心。":"当前朝向保持不变。"}`);}}><strong>{t(preset.name)}</strong><span>{t(preset.description)}</span><small>{preset.position.x.toLocaleString(locale)} / {preset.position.y.toLocaleString(locale)} / {preset.position.z.toLocaleString(locale)}</small></button>)}</div>
+              <div>{observerPresets.map(preset=><button key={preset.id} type="button" aria-pressed={Math.hypot(observerPositionParsec.x-preset.position.x,observerPositionParsec.y-preset.position.y,observerPositionParsec.z-preset.position.z)<.001} onClick={()=>{cancelSkyPointer();setScope("galaxy-prediction");if(preset.id==="above-disc"||preset.id==="below-disc"){if(!discOrigin)setDiscOrigin({position:Math.abs(observerPositionParsec.z)<1000?{...observerPositionParsec}:{...observerPositionParsec,z:0},camera:{...camera},atmosphere:atmospherePreset,centreLocked,exposure:displayExposureStops,mode:observationMode,follows:observerFollowsDynamics,timeYears:simulationTimeYears,kind:'disc'});}else{if(discOrigin){setDisplayExposureStops(discOrigin.exposure);setObservationMode(discOrigin.mode);setObserverFollowsDynamics(discOrigin.follows);}setDiscOrigin(null);}relocateObserver({...preset.position});if(preset.id==='above-disc'||preset.id==='below-disc'){setAtmospherePreset('space');setCentreLocked(true);setCamera(cameraFacingGalacticCentre(preset.position,{...camera,horizontalFieldOfViewDegrees:100}));}setNavigationNotice(`已跳转至${t(preset.name)}，模拟时间已归零。${preset.id==="above-disc"||preset.id==="below-disc"?"已回望并锁定银河中心。":centreLocked?"继续锁定银河中心。":"当前朝向保持不变。"}`);}}><strong>{t(preset.name)}</strong><span>{t(preset.description)}</span><small>{preset.position.x.toLocaleString(locale)} / {preset.position.y.toLocaleString(locale)} / {preset.position.z.toLocaleString(locale)}</small></button>)}</div>
             </section>
             <p className="control-definition">{t("银河中心为坐标原点。横向负方向指向太阳，纵向位于银河盘面内，垂直正方向朝银河盘上方。下面的距离是到银河中心的直线距离，数值越大表示越远。")}</p>
             <svg ref={mapRef} className={`galaxy-minimap ${isMapDragging ? "is-dragging" : ""}`} viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} role="img" aria-label={t("银河盘面位置图；点击或拖动观察者点可连续改变位置")} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setIsMapDragging(true); setPositionFromMapPointer(event.clientX, event.clientY); }} onPointerMove={(event) => { if (isMapDragging) setPositionFromMapPointer(event.clientX, event.clientY); }} onPointerUp={(event) => { event.currentTarget.releasePointerCapture(event.pointerId); setIsMapDragging(false); }} onPointerCancel={() => setIsMapDragging(false)}>
@@ -1552,7 +1594,7 @@ function PlanetariumView() {
           <h2>{language==='en'?'Deep-sky atlas':'深空图鉴'}</h2>
           <p>{language==='en'?'Locate observed nebulae and galaxies, or explore a relativistic black-hole model.':'定位星云与星系的观测照片，或进入广义相对论黑洞近景。'}</p>
           <h3>{language==='en'?'Black holes':'黑洞与引力'}</h3>
-          <div className="cosmos-grid">{compactObjects.map(object=><button key={object.id} onClick={()=>focusCompact(object)}><strong>{language==='en'?object.nameEn:object.name}</strong><small>{object.massSolar.toLocaleString(locale)} {language==='en'?'solar masses':'个太阳质量'}</small></button>)}</div>
+          <div className="cosmos-grid">{liveCompactObjects.map(object=><button key={object.id} onClick={()=>focusCompact(object)}><strong>{language==='en'?object.nameEn:object.name}</strong><small>{object.massSolar.toLocaleString(locale)} {language==='en'?'solar masses':'个太阳质量'}</small></button>)}</div>
           <h3>{language==='en'?'Observed nebulae and galaxies':'星云与星系实拍'}</h3>
           <div className="cosmos-grid">{[...deepSkyTargetsById.values()].filter(target=>target.image).map(target=><button key={target.id} onClick={()=>focusDeepSky(target)}><img src={target.image!.imagePath} alt="" loading="lazy"/><strong>{language==='en'?(target.nameEn??target.aliases.find(alias=>/[A-Za-z]/.test(alias))??target.name):target.name}</strong></button>)}</div>
           <p>{language==='en'?'Dark matter contributes to the gravitational field and orbital speeds; it does not emit visible light.':'暗物质参与引力势和轨道速度计算，本身不发出可见光。'}</p>

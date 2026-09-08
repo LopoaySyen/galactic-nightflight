@@ -15,6 +15,7 @@ uniform vec3 observerOffset, forward, cameraRight, cameraUp, zenith;
 uniform vec2 tangentFov;
 uniform float elapsedYears, atmosphere, mode, exposure, daylightPenalty, pixelRatio;
 uniform float scintillationTime, scintillationEnabled;
+uniform float allSky, distanceCut;
 varying vec3 starColour;
 varying float signal, diameter, pulse;
 ${scintillationGlsl}
@@ -38,7 +39,8 @@ void main() {
   float apparent = lensedMagnitude + 5.0 * log(distance/10.0)/log(10.0) + attenuation + daylightPenalty;
   float limit = mode < 0.5 ? 6.2 : mode < 1.5 ? 7.1 : mode < 2.5 ? 12.4 : 12.0;
   vec2 screen = vec2(dot(direction,cameraRight),dot(direction,cameraUp))/(max(front,0.00001)*tangentFov);
-  if (!lensVisible || front <= 0.0 || apparent > limit || (atmosphere > 0.5 && altitude <= 0.0) || abs(screen.x)>1.05 || abs(screen.y)>1.05) {
+  if(allSky>.5)screen=vec2(atan(direction.y,direction.x)/3.141592653589793,asin(clamp(direction.z,-1.0,1.0))/1.5707963267948966);
+  if (!lensVisible || (allSky<.5&&front<=0.0) || apparent > limit || (distanceCut>0.0&&distance>distanceCut) || (distanceCut<0.0&&distance<=-distanceCut) || (atmosphere > 0.5 && altitude <= 0.0) || abs(screen.x)>1.05 || abs(screen.y)>1.05) {
     gl_Position=vec4(3.0,3.0,0.0,1.0); gl_PointSize=1.0; signal=0.0; starColour=vec3(0.0); diameter=1.0; return;
   }
   float gain = mode < 0.5 ? 105.0 : mode < 1.5 ? 155.0 : mode < 2.5 ? 420.0 : 360.0;
@@ -66,7 +68,7 @@ export interface StarGpuRenderer {
   setSources(sources: readonly PreparedGalaxyPointSource[], origin: Vector3): void;
   render(camera: ViewCamera, position: Vector3, timeYears: number, width: number, height: number,
     pixelRatio: number, zenith: Vector3, atmosphere: AtmospherePreset, mode: ObservationMode, exposure: number, sunAltitude: number,
-    scintillationTime?: number, scintillationEnabled?: boolean, lens?: LensView | null): boolean;
+    scintillationTime?: number, scintillationEnabled?: boolean, lens?: LensView | null,allSky?:boolean,distanceCut?:number): boolean;
   animateAtmosphere(seconds: number): boolean;
   dispose(): void;
 }
@@ -87,7 +89,7 @@ export function createStarGpuRenderer(canvas: HTMLCanvasElement): StarGpuRendere
   const buffer=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
   for(const [name,size,offset] of [["position",3,0],["velocity",3,12],["magnitude",1,24],["colour",3,28],["phase",1,40]] as const){
     const attribute=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(attribute);gl.vertexAttribPointer(attribute,size,gl.FLOAT,false,44,offset);}
-  const uniforms=Object.fromEntries(["rayOrbits","rayInverse","relativisticRadius","discEdgeFade","lensDirection","lensDistance","lensStrength","lensShadow","secondaryImage","observerOffset","forward","cameraRight","cameraUp","zenith","tangentFov","elapsedYears","atmosphere","mode","exposure","daylightPenalty","pixelRatio","scintillationTime","scintillationEnabled"].map(name=>[name,gl.getUniformLocation(program,name)]));
+  const uniforms=Object.fromEntries(["allSky","distanceCut","rayOrbits","rayInverse","relativisticRadius","discEdgeFade","lensDirection","lensDistance","lensStrength","lensShadow","secondaryImage","observerOffset","forward","cameraRight","cameraUp","zenith","tangentFov","elapsedYears","atmosphere","mode","exposure","daylightPenalty","pixelRatio","scintillationTime","scintillationEnabled"].map(name=>[name,gl.getUniformLocation(program,name)]));
   let count=0, epoch=0, lensStrength=0, relativistic=false;
   let lastTable:SchwarzschildRayTable|undefined;
   const rayTextures=[0,1].map(unit=>{const texture=gl.createTexture()!;gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);
@@ -112,10 +114,11 @@ export function createStarGpuRenderer(canvas: HTMLCanvasElement): StarGpuRendere
       }
       gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);
     },
-    render(camera,position,timeYears,width,height,pixelRatio,zenith,atmosphere,mode,exposure,sunAltitude,scintillationTime=0,scintillationEnabled=false,lens=null){
+    render(camera,position,timeYears,width,height,pixelRatio,zenith,atmosphere,mode,exposure,sunAltitude,scintillationTime=0,scintillationEnabled=false,lens=null,allSky=false,distanceCut=0){
       if(gl.isContextLost()) return false;
       if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
       gl.viewport(0,0,width,height);gl.useProgram(program);gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniform1f(uniforms.allSky,allSky?1:0);gl.uniform1f(uniforms.distanceCut,distanceCut);
       lensStrength=lens?.strength??0;
       const radius=lensStrength>0?2/lensStrength:Infinity;
       relativistic=!!lens&&lens.distance<1&&radius>=65&&radius<=1e6;

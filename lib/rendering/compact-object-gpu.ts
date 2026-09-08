@@ -1,149 +1,107 @@
-import type { CompactObject } from './compact-object-catalog.ts';
-import type { Vector3 } from '../physics/vector.ts';
-import type { ViewCamera } from './contracts.ts';
-import { createCameraBasis,projectDirectionPerspective } from './projection.ts';
-import { lensView } from '../physics/gravitational-lensing.ts';
-import { schwarzschildRayTable,schwarzschildLookupGlsl,thermalSpectrumTexture,thinDiscTemperature,type SchwarzschildRayTable } from '../physics/schwarzschild.ts';
-
-const vertex=`attribute vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}`;
-const fragment=`precision highp float;
-${schwarzschildLookupGlsl}
-uniform sampler2D rayEscape,thermal,sky;
-uniform vec2 resolution;
-uniform vec3 forward,cameraRight,cameraUp,toHole,discNormal;
-uniform float tangentHalfFov,temperatureScale,exposure,backgroundExposure,skyLoaded,bolometric,artistic;
-const float pi=3.141592653589793;
-float fluxShape(float r){
-  float x=sqrt(2.0*r),x0=sqrt(6.0),s=sqrt(3.0);
-  float integral=x-x0-s*.5*log((x-s)*(x0+s)/((x+s)*(x0-s)));
-  return max(0.0,integral)/(pow(x,5.0)*(x*x-3.0));
-}
-vec3 spectrum(float temperature){
-  float x=(clamp((log(max(100.0,temperature))/log(10.0)-2.0)/5.0,0.0,1.0)*1023.0+.5)/1024.0;
-  return exp2(vec3(unpack16(texture2D(thermal,vec2(x,1.0/6.0))),unpack16(texture2D(thermal,vec2(x,.5))),unpack16(texture2D(thermal,vec2(x,5.0/6.0))))*160.0-80.0);
-}
-vec3 showRadiance(vec3 radiance){return pow(vec3(1.0)-exp(-radiance*exp2(exposure)),vec3(1.0/2.2));}
-float grain(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-float noise(vec2 p){
-  vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
-  return mix(mix(grain(i),grain(i+vec2(1.0,0.0)),f.x),mix(grain(i+vec2(0.0,1.0)),grain(i+vec2(1.0,1.0)),f.x),f.y);
-}
-vec3 paintedDisc(vec3 point,float r,float g,float total){
-  // Artwork lives on the disc, so the same ray tracing bends its filaments.
-  float azimuth=atan(point.y,point.x),spiral=azimuth+1.8*log(r);
-  vec2 flow=vec2(cos(spiral),sin(spiral))*r;
-  float clouds=.58*noise(flow*.8)+.28*noise(flow*2.1)+.14*noise(flow*5.7);
-  float strands=pow(.5+.5*sin(r*7.5+clouds*9.0+2.0*sin(3.0*azimuth)),3.0);
-  float structure=(.32+1.15*clouds)*(.6+.85*strands);
-  float heat=clamp(pow(fluxShape(r)/fluxShape(5.0),.25)*g,0.0,1.5);
-  vec3 amber=mix(vec3(1.0,.09,.012),vec3(1.0,.48,.10),smoothstep(.25,1.0,heat));
-  vec3 tint=mix(amber,vec3(1.0,.84,.54),smoothstep(1.02,1.5,heat));
-  return tint*total*structure*3.8;
-}
-void main(){
-  vec2 p=gl_FragCoord.xy/resolution*2.0-1.0;
-  vec3 direction=normalize(forward+cameraRight*p.x*tangentHalfFov+cameraUp*p.y*tangentHalfFov*resolution.y/resolution.x);
-  float cosine=dot(direction,toHole);if(cosine<=0.0)discard;
-  vec3 offset=direction-toHole*cosine;
-  float sine=length(offset),b=relativisticRadius*sine/sqrt(1.0-1.0/relativisticRadius);
-  if(b>=64.0)discard;
-  vec3 axis=sine>1e-7?offset/sine:cameraRight;
-  vec3 radial=-toHole;
-  float phi=atan(-dot(discNormal,radial),dot(discNormal,axis));
-  if(phi<=0.0)phi+=pi;
-  // Photon angular momentum has the opposite sign to the backward-traced ray.
-  float lambda=-b*dot(cross(radial,axis),discNormal);
-  vec3 colour=vec3(0.0);float transmission=1.0;
-  for(int crossing=0;crossing<3;crossing++){
-    float angle=phi+float(crossing)*pi;
-    float r=orbitRadius(b,angle);
-    float opacity=discOpacity(r);
-    if(transmission>0.0 && opacity>0.0){
-      float omega=1.0/sqrt(2.0*r*r*r);
-      float g=sqrt(1.0-1.5/r)/(sqrt(1.0-1.0/relativisticRadius)*(1.0-omega*lambda));
-      float temperature=temperatureScale*pow(fluxShape(r),.25);
-      // I_nu/nu^3 is invariant: a redshifted blackbody is Planck at g*T.
-      vec3 optical=spectrum(g*temperature);
-      vec3 radiance;
-      float total=5.670374419e-8*pow(g*temperature,4.0)/pi/1e10;
-      if(artistic>.5){
-        vec3 point=(radial*cos(angle)+axis*sin(angle))*r;
-        radiance=paintedDisc(point,r,g,total);
-      }else if(bolometric>.5){
-        // Bolometric intensity is sigma (gT)^4 / pi; colour encodes thermal hue.
-        vec3 hue=optical/max(max(optical.r,optical.g),max(optical.b,1e-20));
-        radiance=hue*total;
-      }else radiance=optical;
-      colour+=transmission*opacity*pow(showRadiance(radiance),vec3(2.2));
-      transmission*=1.0-opacity;
-    }
-  }
-  if(transmission>0.0){
-    vec4 escaped=texture2D(rayEscape,vec2((orbitColumn(b)+.5)/1024.0,.5));
-    if(escaped.b>.99&&skyLoaded>.5){
-      float angle=unpack16(escaped)*3.0*pi;
-      vec3 farDirection=radial*cos(angle)+axis*sin(angle);
-      vec2 uv=vec2(atan(farDirection.y,farDirection.x)/(2.0*pi)+.5,.5-asin(clamp(farDirection.z,-1.0,1.0))/pi);
-      colour+=transmission*min(vec3(1.0),pow(texture2D(sky,uv).rgb,vec3(2.2))*exp2(backgroundExposure));
-    }
-  }
-  gl_FragColor=vec4(pow(clamp(colour,0.0,1.0),vec3(1.0/2.2)),1.0);
-}`;
+import type {CompactObject} from './compact-object-catalog.ts';
+import type {Vector3} from '../physics/vector.ts';
+import type {ViewCamera} from './contracts.ts';
+import {createCameraBasis,projectDirectionPerspective} from './projection.ts';
+import {lensView,SCHWARZSCHILD_PARSEC_PER_SOLAR_MASS} from '../physics/gravitational-lensing.ts';
+import {thermalSpectrumTexture} from '../physics/schwarzschild.ts';
+import {kerrDiscProfile,kerrIsco} from '../physics/kerr.ts';
+import {kerrVertex,kerrGeometryFragment,kerrDisplayFragment} from './kerr-shaders.ts';
 
 export interface CompactGpuRenderer {
   setSky(pixels:Uint8ClampedArray,width:number,height:number):void;
-  render(object:CompactObject|undefined,observer:Vector3,camera:ViewCamera,width:number,height:number,exposure:number,eddingtonRatio:number,bolometric:boolean,artistic:boolean,backgroundExposure:number):boolean;
+  setStars(canvas:HTMLCanvasElement):void;
+  render(object:CompactObject|undefined,observer:Vector3,camera:ViewCamera,width:number,height:number,exposure:number,eddingtonRatio:number,bolometric:boolean,artistic:boolean,backgroundExposure:number,relativeOffset?:Vector3):boolean;
+  animateDisc(seconds:number):void;
+  sourceDirectionAtPixel(xFraction:number,yFraction:number):Vector3|null;
   dispose():void;
 }
-export function nearestResolvedCompact(objects:readonly CompactObject[],observer:Vector3,camera:ViewCamera,width:number,height:number) {
+export function nearestResolvedCompact(objects:readonly CompactObject[],observer:Vector3,camera:ViewCamera,width:number,height:number){
   return objects.filter(object=>{
     const lens=lensView(object,observer);if(!lens)return false;
-    const radius=2/lens.strength;
-    const p=projectDirectionPerspective(lens.direction,camera,width,height);
-    return radius>=65 && radius<1e6 && p.forwardCosine>0 &&
-      Math.tan(lens.shadowAngle)*width/(2*Math.tan(camera.horizontalFieldOfViewDegrees*Math.PI/360))>=1;
+    const radius=2/lens.strength,p=projectDirectionPerspective(lens.direction,camera,width,height);
+    return radius>=65&&radius<1e6&&p.forwardCosine>0&&Math.tan(lens.shadowAngle)*width/(2*Math.tan(camera.horizontalFieldOfViewDegrees*Math.PI/360))>=1;
   }).sort((a,b)=>lensView(b,observer)!.strength-lensView(a,observer)!.strength)[0];
 }
-export function createCompactGpuRenderer(canvas:HTMLCanvasElement):CompactGpuRenderer|null {
-  const gl=canvas.getContext('webgl',{alpha:true,antialias:false,premultipliedAlpha:true});if(!gl)return null;
-  const compile=(type:number,source:string)=>{const shader=gl.createShader(type)!;gl.shaderSource(shader,source);gl.compileShader(shader);
-    if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)){console.error('Relativistic renderer:',gl.getShaderInfoLog(shader));gl.deleteShader(shader);return null;}return shader;};
-  const vs=compile(gl.VERTEX_SHADER,vertex),fs=compile(gl.FRAGMENT_SHADER,fragment);if(!vs||!fs)return null;
-  const program=gl.createProgram()!;gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);gl.deleteShader(vs);gl.deleteShader(fs);
-  if(!gl.getProgramParameter(program,gl.LINK_STATUS)){gl.deleteProgram(program);return null;}
-  gl.useProgram(program);
+export function createCompactGpuRenderer(canvas:HTMLCanvasElement):CompactGpuRenderer|null{
+  const gl=canvas.getContext('webgl2',{alpha:true,antialias:false,premultipliedAlpha:false});
+  if(!gl||!gl.getExtension('EXT_color_buffer_float'))return null;
+  const program=(fragment:string)=>{
+    const p=gl.createProgram()!;
+    for(const [type,source] of [[gl.VERTEX_SHADER,kerrVertex],[gl.FRAGMENT_SHADER,fragment]] as const){
+      const s=gl.createShader(type)!;gl.shaderSource(s,source);gl.compileShader(s);
+      if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(`Kerr shader: ${gl.getShaderInfoLog(s)}`);
+      gl.attachShader(p,s);gl.deleteShader(s);
+    }
+    gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(`Kerr program: ${gl.getProgramInfoLog(p)}`);return p;
+  };
+  const geometry=program(kerrGeometryFragment),display=program(kerrDisplayFragment);
   const buffer=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
-  const attribute=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(attribute);gl.vertexAttribPointer(attribute,2,gl.FLOAT,false,0,0);
-  const uniforms=Object.fromEntries(['rayOrbits','rayInverse','rayEscape','thermal','sky','resolution','forward','cameraRight','cameraUp','toHole','discNormal','tangentHalfFov','relativisticRadius','temperatureScale','exposure','backgroundExposure','skyLoaded','bolometric','artistic','discEdgeFade'].map(name=>[name,gl.getUniformLocation(program,name)]));
-  const textures=['rayOrbits','rayInverse','rayEscape','thermal','sky'].map((name,index)=>{
-    const texture=gl.createTexture()!;gl.activeTexture(gl.TEXTURE0+index);gl.bindTexture(gl.TEXTURE_2D,texture);
+  const use=(p:WebGLProgram)=>{gl.useProgram(p);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);const a=gl.getAttribLocation(p,'position');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);};
+  const gu=Object.fromEntries(['forward','cameraRight','cameraUp','observer','tangentFov','spin','innerRadius'].map(n=>[n,gl.getUniformLocation(geometry,n)]));
+  const names=['hit0','hit1','hit2','escapeRay','discTemperature','thermal','sky','stars'];
+  const du=Object.fromEntries([...names,'innerRadius','spin','phase','exposure','backgroundExposure','bolometric','artistic'].map(n=>[n,gl.getUniformLocation(display,n)]));
+  const textures=names.map((_,i)=>{
+    const texture=gl.createTexture()!;gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,texture);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.uniform1i(uniforms[name],index);return texture;
+    // Float ray records must never be blended across an image/occlusion boundary.
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,i<5?gl.NEAREST:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,i<5?gl.NEAREST:gl.LINEAR);return texture;
   });
-  const upload=(unit:number,width:number,height:number,pixels:Uint8Array|Uint8ClampedArray)=>{gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,textures[unit]);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,pixels);};
-  upload(3,1024,3,thermalSpectrumTexture());upload(4,1,1,new Uint8Array([0,0,0,255]));
-  let lastTable:SchwarzschildRayTable|undefined,skyLoaded=false;
+  const bind=(i:number)=>{gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,textures[i]);};
+  const upload=(i:number,w:number,h:number,data:Uint8Array|Uint8ClampedArray)=>{bind(i);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,data);};
+  upload(5,1024,3,thermalSpectrumTexture());upload(6,1,1,new Uint8Array([0,0,0,255]));upload(7,1,1,new Uint8Array([0,0,0,255]));
+  const framebuffer=gl.createFramebuffer()!;
+  let mapWidth=0,mapHeight=0,geometryKey='',profileKey='',phase=0,spin=.7,active=false,art=false;
+  const draw=()=>{if(!active||gl.isContextLost())return;gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,canvas.width,canvas.height);use(display);gl.uniform1f(du.phase,phase);for(let i=0;i<8;i++){bind(i);gl.uniform1i(du[names[i]],i);}gl.drawArrays(gl.TRIANGLES,0,6);};
   return {
-    setSky(pixels,width,height){upload(4,width,height,pixels);skyLoaded=true;},
-    render(object,observer,camera,width,height,exposure,eddingtonRatio,bolometric,artistic,backgroundExposure){
+    setSky(pixels,width,height){upload(6,width,height,pixels);},
+    setStars(source){
+      bind(7);
+      // Additive star colour already includes coverage. Unpremultiplying the
+      // transparent canvas would turn every faint halo into an opaque blob.
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
+    },
+    render(object,observer,camera,width,height,exposure,ratio,bolometric,artistic,backgroundExposure,relativeOffset){
       if(gl.isContextLost())return false;
       if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
-      gl.viewport(0,0,width,height);gl.useProgram(program);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
-      if(!object)return false;
-      const lens=lensView(object,observer)!;
-      const table=schwarzschildRayTable(2/lens.strength);
-      if(lastTable!==table){upload(0,1024,512,table.pixels);upload(1,1024,1,table.inverse);upload(2,1024,1,table.escapePixels);lastTable=table;}
-      const basis=createCameraBasis(camera);
-      for(const [name,v] of [['forward',basis.forward],['cameraRight',basis.right],['cameraUp',basis.up],['toHole',lens.direction],['discNormal',{x:0,y:0,z:1}]] as const)gl.uniform3f(uniforms[name],v.x,v.y,v.z);
-      gl.uniform1f(uniforms.bolometric,bolometric?1:0);
-      gl.uniform1f(uniforms.artistic,artistic?1:0);gl.uniform1f(uniforms.discEdgeFade,artistic?1:0);
-      gl.uniform1f(uniforms.backgroundExposure,backgroundExposure);
-      gl.uniform2f(uniforms.resolution,width,height);gl.uniform1f(uniforms.tangentHalfFov,Math.tan(camera.horizontalFieldOfViewDegrees*Math.PI/360));
-      gl.uniform1f(uniforms.relativisticRadius,table.observerRadius);gl.uniform1f(uniforms.exposure,exposure);gl.uniform1f(uniforms.skyLoaded,skyLoaded?1:0);
-      const r=10,x=Math.sqrt(2*r),x0=Math.sqrt(6),s=Math.sqrt(3),shape=(x-x0-s/2*Math.log((x-s)*(x0+s)/((x+s)*(x0-s))))/(x**5*(x*x-3));
-      gl.uniform1f(uniforms.temperatureScale,thinDiscTemperature(r,object.massSolar,eddingtonRatio)/shape**.25);
-      gl.drawArrays(gl.TRIANGLES,0,6);return true;
+      active=!!object;art=artistic;
+      if(!object){gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);return false;}
+      spin=object.spin;
+      const unit=SCHWARZSCHILD_PARSEC_PER_SOLAR_MASS*object.massSolar/2;
+      const offset=relativeOffset??{x:observer.x-object.positionParsec.x,y:observer.y-object.positionParsec.y,z:observer.z-object.positionParsec.z};
+      const relative={x:offset.x/unit,y:offset.y/unit,z:offset.z/unit};
+      const basis=createCameraBasis(camera),mw=Math.min(width,1280),mh=Math.max(1,Math.round(mw*height/width));
+      // Subpixel galactic coordinate roundoff must not retrace a stationary follow camera.
+      const key=JSON.stringify([Object.values(relative).map(v=>v.toPrecision(7)),basis,camera.horizontalFieldOfViewDegrees,spin,mw,mh]);
+      if(key!==geometryKey){
+        gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);
+        if(mw!==mapWidth||mh!==mapHeight){
+          mapWidth=mw;mapHeight=mh;
+          for(let i=0;i<4;i++){bind(i);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,mw,mh,0,gl.RGBA,gl.FLOAT,null);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0+i,gl.TEXTURE_2D,textures[i],0);}
+          gl.drawBuffers([0,1,2,3].map(i=>gl.COLOR_ATTACHMENT0+i));
+          if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw new Error('Kerr ray framebuffer unavailable');
+        }
+        use(geometry);gl.viewport(0,0,mw,mh);
+        for(const [name,v] of [['forward',basis.forward],['cameraRight',basis.right],['cameraUp',basis.up],['observer',relative]] as const)gl.uniform3f(gu[name],v.x,v.y,v.z);
+        const tangent=Math.tan(camera.horizontalFieldOfViewDegrees*Math.PI/360);gl.uniform2f(gu.tangentFov,tangent,tangent*height/width);gl.uniform1f(gu.spin,spin);gl.uniform1f(gu.innerRadius,kerrIsco(spin));
+        gl.drawArrays(gl.TRIANGLES,0,6);geometryKey=key;
+      }
+      const pk=[object.massSolar,spin,ratio].join('|');
+      if(pk!==profileKey){const p=kerrDiscProfile(object.massSolar,spin,ratio);bind(4);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,1024,1,0,gl.RGBA,gl.FLOAT,p.temperatures);profileKey=pk;}
+      use(display);gl.uniform1f(du.innerRadius,kerrIsco(spin));gl.uniform1f(du.spin,spin);gl.uniform1f(du.exposure,exposure);gl.uniform1f(du.backgroundExposure,backgroundExposure);gl.uniform1f(du.bolometric,bolometric?1:0);gl.uniform1f(du.artistic,artistic?1:0);draw();return true;
     },
-    dispose(){for(const texture of textures)gl.deleteTexture(texture);gl.deleteBuffer(buffer);gl.deleteProgram(program);}
+    // One display orbit at 10 GM/c² takes 30 seconds; physical periods are shown in the UI.
+    animateDisc(seconds){if(active&&art){phase+=seconds*2*Math.PI*(10**1.5+spin)/30;draw();}},
+    sourceDirectionAtPixel(x,y){
+      if(!active)return null;
+      gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);
+      const pixel=new Float32Array(4),px=Math.min(mapWidth-1,Math.max(0,Math.floor(x*mapWidth))),py=Math.min(mapHeight-1,Math.max(0,Math.floor((1-y)*mapHeight)));
+      let transmission=1;
+      for(let i=0;i<3;i++){gl.readBuffer(gl.COLOR_ATTACHMENT0+i);gl.readPixels(px,py,1,1,gl.RGBA,gl.FLOAT,pixel);if(pixel[3]>.5){const t=Math.max(0,Math.min(1,(pixel[0]-44)/36));transmission*=art?t*t*(3-2*t):0;}}
+      gl.readBuffer(gl.COLOR_ATTACHMENT3);gl.readPixels(px,py,1,1,gl.RGBA,gl.FLOAT,pixel);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+      return pixel[3]>.5&&transmission>.15?{x:pixel[0],y:pixel[1],z:pixel[2]}:null;
+    },
+    dispose(){textures.forEach(t=>gl.deleteTexture(t));gl.deleteBuffer(buffer);gl.deleteFramebuffer(framebuffer);gl.deleteProgram(geometry);gl.deleteProgram(display);}
   };
 }
