@@ -1,4 +1,6 @@
 "use client";
+import { useObservationLanguage, ObservationLanguageProvider } from './observation-language';
+
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -125,8 +127,8 @@ function mapPoint(positionParsec: Vector3) {
   };
 }
 
-function formatParsec(value: number): string {
-  return new Intl.NumberFormat("zh-CN", {
+function formatParsec(value: number, locale = "zh-CN"): string {
+  return new Intl.NumberFormat(locale, {
     maximumFractionDigits: Math.abs(value) < 1_000 ? 1 : 0,
   }).format(value);
 }
@@ -135,9 +137,9 @@ function linearChannelToDisplay(channel: number): number {
   return Math.round(255 * clamp(channel ** (1 / 2.2), 0, 1));
 }
 
-function formatTimeYears(value: number): string {
+function formatTimeYears(value: number, locale = "zh-CN"): string {
   const sign = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${sign}${new Intl.NumberFormat("zh-CN", { maximumFractionDigits: Math.abs(value) < 100 ? 1 : 0 }).format(Math.abs(value))} 年`;
+  return `${sign}${new Intl.NumberFormat(locale, { maximumFractionDigits: Math.abs(value) < 100 ? 1 : 0 }).format(Math.abs(value))} 年`;
 }
 
 function observationModeLabel(mode: ObservationMode): string {
@@ -154,7 +156,12 @@ function observationModeDescription(mode: ObservationMode): string {
   return "裸眼模式采用较低的暗星阈值和较完整的亮星色彩，模拟尚未充分暗适应的视觉。";
 }
 
-export function PlanetariumScene() {
+export function PlanetariumScene({ initialLanguage = 'zh' }: { initialLanguage?: 'zh' | 'en' }) {
+  return <ObservationLanguageProvider initialLanguage={initialLanguage}><PlanetariumView/></ObservationLanguageProvider>;
+}
+
+function PlanetariumView() {
+  const { language, locale, t, toggleLanguage } = useObservationLanguage();
   const [scope, setScope] = useState<RenderScope>("galaxy-prediction");
   const [observationMode, setObservationMode] = useState<ObservationMode>("camera");
   const [observedBrightStars, setObservedBrightStars] = useState<ReturnType<typeof parseObservedBrightStarCatalog>>([]);
@@ -189,9 +196,9 @@ export function PlanetariumScene() {
     const distance=Math.hypot(observerPositionParsec.x,observerPositionParsec.y,observerPositionParsec.z);
     if(distance<1e-9)return;
     const altitude=Math.asin(clamp((-observerPositionParsec.x*atmosphereZenith.x-observerPositionParsec.y*atmosphereZenith.y-observerPositionParsec.z*atmosphereZenith.z)/distance,-1,1))*180/Math.PI;
-    if(altitude<8){setAtmospherePreset("space");setNavigationNotice("中心锁定的方向被地平线遮挡或紧贴地面，已切换为无大气视图，继续跟随银河中心。");}
+    if(altitude<8){const frame=requestAnimationFrame(()=>{setAtmospherePreset("space");setNavigationNotice("中心锁定的方向被地平线遮挡或紧贴地面，已切换为无大气视图，继续跟随银河中心。");});return()=>cancelAnimationFrame(frame);}
   },[centreLocked,observerPositionParsec,atmosphereZenith,atmospherePreset]);
-  useEffect(()=>{try{if(shouldShowObservationTutorial(window.localStorage))setTutorialStep(0);}catch{setTutorialStep(0);}},[]);
+  useEffect(()=>{const frame=requestAnimationFrame(()=>{try{if(shouldShowObservationTutorial(window.localStorage))setTutorialStep(0);}catch{setTutorialStep(0);}});return()=>cancelAnimationFrame(frame);},[]);
   const [sunAltitudeDegrees, setSunAltitudeDegrees] = useState(-18);
   const [sunAzimuthDegrees, setSunAzimuthDegrees] = useState(240);
   const [showExtragalactic, setShowExtragalactic] = useState(true);
@@ -739,7 +746,7 @@ export function PlanetariumScene() {
           context.fillStyle = "rgba(224, 235, 238, 0.82)";
           context.font = `${10 * pixelRatio}px system-ui, sans-serif`;
           context.fillText(
-            source.displayName,
+            t(source.displayName),
             source.canvasX + majorPixels * 0.52,
             source.canvasY - minorPixels * 0.46,
           );
@@ -828,7 +835,7 @@ export function PlanetariumScene() {
           context.globalCompositeOperation = "source-over";
           context.fillStyle = "rgba(220, 230, 231, 0.72)";
           context.font = `${9 * pixelRatio}px system-ui, sans-serif`;
-          context.fillText(galaxy.displayName, galaxy.canvasX + majorPixels * 0.55 + 5 * pixelRatio, galaxy.canvasY - 4 * pixelRatio);
+          context.fillText(t(galaxy.displayName), galaxy.canvasX + majorPixels * 0.55 + 5 * pixelRatio, galaxy.canvasY - 4 * pixelRatio);
           context.globalCompositeOperation = "lighter";
         }
       }
@@ -996,7 +1003,7 @@ export function PlanetariumScene() {
         context.fillStyle = "rgba(211, 225, 227, 0.76)";
         context.font = `${10 * pixelRatio}px system-ui, sans-serif`;
         context.fillText(
-          `方向核验源 ${String(index + 1).padStart(2, "0")}`,
+          t(`方向核验源 ${String(index + 1).padStart(2, "0")}`),
           source.canvasX + 8 * pixelRatio,
           source.canvasY - 7 * pixelRatio,
         );
@@ -1007,7 +1014,7 @@ export function PlanetariumScene() {
 
     if (scope === "galaxy-prediction" && showBenchmarkLabels) {
       const namedStars = projectPreparedGalaxyPointSources(namedPreparedStars, camera, width, height, observerPositionParsec, simulationTimeYears);
-      drawObservedStarLabels(context, namedStars, pixelRatio, width, height, atmosphereZenith, atmospherePreset, observationMode, sunAltitudeDegrees);
+      drawObservedStarLabels(context, namedStars, pixelRatio, width, height, atmosphereZenith, atmospherePreset, observationMode, sunAltitudeDegrees, language);
     }
     const selectedObjectPosition=selectedStar?pointSourcePositionAtTime(selectedStar,simulationTimeYears):selectedDeepSky?.positionParsec;
     if(scope==="galaxy-prediction"&&selectedObjectPosition){
@@ -1099,7 +1106,7 @@ export function PlanetariumScene() {
         context.drawImage(projectionCanvas, 0, 0, width, height);
       }
     }
-  }, [atmospherePreset, atmosphereZenith, camera, displayExposureStops, planetInclinationDegrees, simulationTimeYears, skyComputation, skyPoints, deepSkyAssetVersion, drawCurve, enhanceDeepSkyScale, galaxyColourGrade, isSkyDragging, observationMode, observerPositionParsec, planetTerrainAssetVersion, preparedExtragalacticSources, preparedGalaxyPointSources, namedPreparedStars, selectedStar, selectedDeepSky, scope, showBenchmarkLabels, showCoordinateGrid, showDeepSkyImages, showExtragalactic, showGalacticPlane, sunAltitudeDegrees, sunDirection]);
+  }, [atmospherePreset, atmosphereZenith, camera, displayExposureStops, planetInclinationDegrees, simulationTimeYears, skyComputation, skyPoints, deepSkyAssetVersion, drawCurve, enhanceDeepSkyScale, galaxyColourGrade, isSkyDragging, observationMode, observerPositionParsec, planetTerrainAssetVersion, preparedExtragalacticSources, preparedGalaxyPointSources, namedPreparedStars, selectedStar, selectedDeepSky, scope, showBenchmarkLabels, showCoordinateGrid, showDeepSkyImages, showExtragalactic, showGalacticPlane, sunAltitudeDegrees, sunDirection, language, t]);
 
   const scheduleDraw = useCallback(() => {
     if (drawRequestRef.current !== null) return;
@@ -1192,12 +1199,12 @@ export function PlanetariumScene() {
 
   const panelButton = (name: Exclude<PanelName, null>, label: string) => (
     <button type="button" className={activePanel === name ? "is-active" : ""} onClick={() => {setSearchOpen(false);setSelectedStarId(null);setSelectedDeepSkyId(null);setActivePanel((current) => (current === name ? null : name));}} aria-pressed={activePanel === name}>
-      {label}
+      {t(label)}
     </button>
   );
 
   return (
-    <main className={`planetarium-shell${minimalInterface ? " is-immersed" : ""}`}>
+    <main lang={language === "en" ? "en" : "zh-CN"} className={`planetarium-shell${minimalInterface ? " is-immersed" : ""}`}>
       <canvas ref={skyBackgroundRef} className="sky-background-layer" aria-hidden="true" />
       <canvas ref={photoCanvasRef} className="sky-photo-layer" aria-hidden="true" />
       <canvas ref={starCanvasRef} className="sky-stars-layer" aria-hidden="true" />
@@ -1206,7 +1213,7 @@ export function PlanetariumScene() {
         ref={canvasRef}
         className={`planetarium-sky${isSkyDragging ? " is-dragging" : ""}`}
         tabIndex={0}
-        aria-label={scope === "galaxy-prediction" ? "可拖动的银河系内部天球天幕；包含实测亮星与三维银河模型预测" : "可拖动的数值核验天幕；不是银河预测"}
+        aria-label={scope === "galaxy-prediction" ? t("可拖动的银河系内部天球天幕；包含实测亮星与三维银河模型预测") : t("可拖动的数值核验天幕；不是银河预测")}
         onPointerDown={(event) => {
           if(!skyPointerRef.current.begin(event))return;
           completedSkyGestureRef.current=null;
@@ -1278,107 +1285,108 @@ export function PlanetariumScene() {
           navigateToDirection({x:position.x-observerPositionParsec.x,y:position.y-observerPositionParsec.y,z:position.z-observerPositionParsec.z}, starName(selectedStar.displayName));
         }} />}
 
+      <div className="observatory-header-actions"><button className="observatory-language" type="button" onClick={() => { cancelSkyPointer(); toggleLanguage(); }} aria-label={language === "en" ? "切换为中文" : "Switch to English"}>{language === "en" ? "中文" : "English"}</button>
       <button className="immersion-toggle" type="button" aria-pressed={minimalInterface}
         onClick={() => { setMinimalInterface(!minimalInterface); setActivePanel(null);setSearchOpen(false);setSelectedStarId(null);setSelectedDeepSkyId(null); }}>
-        {minimalInterface ? "显示控制" : "沉浸观察"}
-      </button>
-      <div className="compute-status" role="status">{renderError || (computeState === "failed" ? "背景计算暂不可用，请刷新重试" : computeState === "updating" ? "正在更新星光与尘埃…" : "")}</div>
-      {navigationNotice && <div className="navigation-notice" role="status">{navigationNotice}<button onClick={() => setNavigationNotice("")} type="button" aria-label="关闭视角提示">×</button></div>}
+        {minimalInterface ? t("显示控制") : t("沉浸观察")}
+      </button></div>
+      <div className="compute-status" role="status">{t(renderError) || (computeState === "failed" ? t("背景计算暂不可用，请刷新重试") : computeState === "updating" ? t("正在更新星光与尘埃…") : "")}</div>
+      {navigationNotice && <div className="navigation-notice" role="status">{t(navigationNotice)}<button onClick={() => setNavigationNotice("")} type="button" aria-label={t("关闭视角提示")}>×</button></div>}
       <header className="planetarium-topbar">
         <div className="planetarium-brand">
-          <img className="observing-brand-logo" src="/brand/logo-starboat.webp" alt="银河夜航星舟标志" width="44" height="44"/>
-          <Link href="/" aria-label="返回银河夜航首页"><strong>银河夜航</strong><small>Galactic Nightflight · 返回首页</small></Link>
+          <img className="observing-brand-logo" src="/brand/logo-starboat.webp" alt={t("银河夜航星舟标志")} width="44" height="44"/>
+          <Link href={language === "en" ? "/en" : "/"} aria-label={t("返回银河夜航首页")}><strong>{t("银河夜航")}</strong><small>{t("Galactic Nightflight · 返回首页")}</small></Link>
         </div>
         <div className={scope === "galaxy-prediction" ? "scene-claim prediction" : "scene-claim benchmark"}>
           <i aria-hidden="true" />
-          <span>{scope === "galaxy-prediction" ? catalogueState === "ready" && gaiaCatalogueState === "ready" ? `银河预测天幕：${observedCatalogueCount.toLocaleString("zh-CN")} 颗观测恒星 + 三维恒星与尘埃模型` : catalogueState === "loading" || gaiaCatalogueState === "loading" ? "银河预测天幕：观测星表载入中 + 三维恒星与尘埃模型" : `银河预测天幕：${observedCatalogueCount.toLocaleString("zh-CN")} 颗已载入观测恒星 + 三维模型` : `数值核验天幕：${numericalBenchmarkEmitters.length.toLocaleString("zh-CN")} 个确定性三维测试光源`}</span>
+          <span>{scope === "galaxy-prediction" ? catalogueState === "ready" && gaiaCatalogueState === "ready" ? t(`银河预测天幕：${observedCatalogueCount.toLocaleString(locale)} 颗观测恒星 + 三维恒星与尘埃模型`) : catalogueState === "loading" || gaiaCatalogueState === "loading" ? t("银河预测天幕：观测星表载入中 + 三维恒星与尘埃模型") : t(`银河预测天幕：${observedCatalogueCount.toLocaleString(locale)} 颗已载入观测恒星 + 三维模型`) : t(`数值核验天幕：${numericalBenchmarkEmitters.length.toLocaleString(locale)} 个确定性三维测试光源`)}</span>
         </div>
-        <div className="time-state"><span>{atmospherePreset === "space" ? "深空视点" : atmospherePreset === "earth-hazy" ? "行星大气 · 轻雾" : "行星大气 · 晴朗"}</span><strong>{observationModeLabel(observationMode)}</strong></div>
+        <div className="time-state"><span>{atmospherePreset === "space" ? t("深空视点") : atmospherePreset === "earth-hazy" ? t("行星大气 · 轻雾") : t("行星大气 · 晴朗")}</span><strong>{t(observationModeLabel(observationMode))}</strong></div>
       </header>
 
-      <nav className="planetarium-rail" aria-label="观察快捷控制">
-        <span className="rail-section-label">查找天体</span>
-        <button data-guide="search" ref={searchButtonRef} type="button" className={searchOpen?"is-active search-trigger":"search-trigger"} aria-expanded={searchOpen} aria-keyshortcuts="/" onClick={()=>{cancelSkyPointer();setSearchOpen(value=>!value);setActivePanel(null);setSelectedStarId(null);setSelectedDeepSkyId(null);}}>搜索天体</button>
+      <nav className="planetarium-rail" aria-label={t("观察快捷控制")}>
+        <span className="rail-section-label">{t("查找天体")}</span>
+        <button data-guide="search" ref={searchButtonRef} type="button" className={searchOpen?"is-active search-trigger":"search-trigger"} aria-expanded={searchOpen} aria-keyshortcuts="/" onClick={()=>{cancelSkyPointer();setSearchOpen(value=>!value);setActivePanel(null);setSelectedStarId(null);setSelectedDeepSkyId(null);}}>{t("搜索天体")}</button>
         <span className="rail-divider" />
-        <div className="direction-buttons" data-guide="directions"><span className="rail-section-label">看向方向</span>
-        <button type="button" onClick={lookTowardCentre}>银河中心</button>
-        <button type="button" onClick={lookTowardOuterGalaxy}>银河外围</button>
-        <button type="button" onClick={() => navigateToDirection({x:0,y:0,z:1}, "盘面上方")}>盘面上方</button>
-        <button type="button" onClick={() => navigateToDirection({x:0,y:0,z:-1}, "盘面下方")}>盘面下方</button></div>
-        <button data-guide="centre-lock" type="button" role="switch" aria-checked={centreLocked} className={centreLocked?"centre-lock is-active":"centre-lock"} onClick={toggleCentreLock} title="开启后持续朝向银河中心；关闭后可以自由拖动">{centreLocked?"中心已锁定":"锁定中心"}</button>
+        <div className="direction-buttons" data-guide="directions"><span className="rail-section-label">{t("看向方向")}</span>
+        <button type="button" onClick={lookTowardCentre}>{t("银河中心")}</button>
+        <button type="button" onClick={lookTowardOuterGalaxy}>{t("银河外围")}</button>
+        <button type="button" onClick={() => navigateToDirection({x:0,y:0,z:1}, "盘面上方")}>{t("盘面上方")}</button>
+        <button type="button" onClick={() => navigateToDirection({x:0,y:0,z:-1}, "盘面下方")}>{t("盘面下方")}</button></div>
+        <button data-guide="centre-lock" type="button" role="switch" aria-checked={centreLocked} className={centreLocked?"centre-lock is-active":"centre-lock"} onClick={toggleCentreLock} title={t("开启后持续朝向银河中心；关闭后可以自由拖动")}>{centreLocked?t("中心已锁定"):t("锁定中心")}</button>
         <span className="rail-divider" />
-        <button type="button" className={showCoordinateGrid ? "is-active" : ""} onClick={() => setShowCoordinateGrid((value) => !value)} aria-pressed={showCoordinateGrid}>网格</button>
-        <button type="button" className={showGalacticPlane ? "is-active" : ""} onClick={() => setShowGalacticPlane((value) => !value)} aria-pressed={showGalacticPlane}>银河盘面</button>
+        <button type="button" className={showCoordinateGrid ? "is-active" : ""} onClick={() => setShowCoordinateGrid((value) => !value)} aria-pressed={showCoordinateGrid}>{t("网格")}</button>
+        <button type="button" className={showGalacticPlane ? "is-active" : ""} onClick={() => setShowGalacticPlane((value) => !value)} aria-pressed={showGalacticPlane}>{t("银河盘面")}</button>
       </nav>
 
       <div className="view-reticle" aria-hidden="true"><span /><span /></div>
 
-      <section data-guide="time" className="time-console" aria-label="模拟时间控制">
-        <button type="button" className="time-play" onClick={() => setIsTimePlaying((value) => !value)} aria-pressed={isTimePlaying}>{isTimePlaying ? "暂停" : "播放"}</button>
-        <button type="button" className={timeDirection < 0 ? "is-active" : ""} onClick={() => setTimeDirection((value) => (value === 1 ? -1 : 1))}>{timeDirection < 0 ? "反向" : "正向"}</button>
+      <section data-guide="time" className="time-console" aria-label={t("模拟时间控制")}>
+        <button type="button" className="time-play" onClick={() => setIsTimePlaying((value) => !value)} aria-pressed={isTimePlaying}>{isTimePlaying ? t("暂停") : t("播放")}</button>
+        <button type="button" className={timeDirection < 0 ? "is-active" : ""} onClick={() => setTimeDirection((value) => (value === 1 ? -1 : 1))}>{timeDirection < 0 ? t("反向") : t("正向")}</button>
         <div className="time-slider">
-          <span><b>时间流速</b><output>{new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 }).format(timeSpeedYearsPerSecond)} 年/秒</output></span>
-          <input type="range" min="0" max="5" step="0.01" value={timeSpeedPower} onChange={(event) => setTimeSpeedPower(Number(event.target.value))} aria-label="时间流速；单位为模拟年每现实秒" />
+          <span><b>{t("时间流速")}</b><output>{new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(timeSpeedYearsPerSecond)}{t(" 年/秒")}</output></span>
+          <input type="range" min="0" max="5" step="0.01" value={timeSpeedPower} onChange={(event) => setTimeSpeedPower(Number(event.target.value))} aria-label={t("时间流速；单位为模拟年每现实秒")} />
         </div>
-        <strong className="time-epoch">{formatTimeYears(simulationTimeYears)}</strong>
-        <button type="button" onClick={resetSimulationTime}>时间归零</button>
-        <label className="observer-motion"><input type="checkbox" checked={observerFollowsDynamics} onChange={(event) => setObserverFollowsDynamics(event.target.checked)} /><span>观察者随轨道</span></label>
+        <strong className="time-epoch">{t(formatTimeYears(simulationTimeYears, locale))}</strong>
+        <button type="button" onClick={resetSimulationTime}>{t("时间归零")}</button>
+        <label className="observer-motion"><input type="checkbox" checked={observerFollowsDynamics} onChange={(event) => setObserverFollowsDynamics(event.target.checked)} /><span>{t("观察者随轨道")}</span></label>
       </section>
 
       <aside className={`planetarium-panel ${activePanel ? "is-open" : ""}`}>
-        <div className="panel-tabs">{panelButton("view", "观察")}{panelButton("location", "位置跳转")}{panelButton("physics", "物理")}</div>
+        <div className="panel-tabs">{panelButton("view", t("观察"))}{panelButton("location", t("位置跳转"))}{panelButton("physics", t("物理"))}</div>
 
         {activePanel === "view" && (
           <div className="panel-body">
-            <div className="panel-heading"><div><span>观察设置</span><h2>天幕与视线</h2></div><button type="button" onClick={() => setActivePanel(null)} aria-label="关闭观察设置">×</button></div>
+            <div className="panel-heading"><div><span>{t("观察设置")}</span><h2>{t("天幕与视线")}</h2></div><button type="button" onClick={() => setActivePanel(null)} aria-label={t("关闭观察设置")}>×</button></div>
             <div className="scope-cards">
-              <button type="button" className={scope === "galaxy-prediction" ? "is-active" : ""} onClick={() => setScope("galaxy-prediction")}><strong>银河预测天幕</strong><small>太阳附近实测亮星；其余由三维模型推断</small></button>
-              <button type="button" className={scope === "numerical-benchmark" ? "is-active" : ""} onClick={() => setScope("numerical-benchmark")}><strong>数值核验层</strong><small>只检查投影和测光；不代表银河</small></button>
+              <button type="button" className={scope === "galaxy-prediction" ? "is-active" : ""} onClick={() => setScope("galaxy-prediction")}><strong>{t("银河预测天幕")}</strong><small>{t("太阳附近实测亮星；其余由三维模型推断")}</small></button>
+              <button type="button" className={scope === "numerical-benchmark" ? "is-active" : ""} onClick={() => setScope("numerical-benchmark")}><strong>{t("数值核验层")}</strong><small>{t("只检查投影和测光；不代表银河")}</small></button>
             </div>
-            <p className="control-definition">单击恒星、星云、星团或星系查看资料；左侧“搜索天体”可按名字定位。拖动转向，滚轮放大。</p>
-            <div className="deep-sky-targets" aria-label="深空天体相机特写">{deepSkyImageSources.map(source=><button type="button" key={source.id} onClick={()=>{const target=deepSkyTargetsById.get(source.id.replace(/-image$/,""));if(target)focusDeepSky(target);}}>{source.displayName.replace(' M42','').replace(' M45','').replace(' M31','')} · 特写</button>)}</div>
+            <p className="control-definition">{t("单击恒星、星云、星团或星系查看资料；左侧“搜索天体”可按名字定位。拖动转向，滚轮放大。")}</p>
+            <div className="deep-sky-targets" aria-label={t("深空天体相机特写")}>{deepSkyImageSources.map(source=><button type="button" key={source.id} onClick={()=>{const target=deepSkyTargetsById.get(source.id.replace(/-image$/,""));if(target)focusDeepSky(target);}}>{t(source.displayName.replace(' M42','').replace(' M45','').replace(' M31',''))}{t(" · 特写")}</button>)}</div>
             <label className="planetarium-range">
-              <span><b>水平视场角</b><output>{camera.horizontalFieldOfViewDegrees.toFixed(camera.horizontalFieldOfViewDegrees < 10 ? 1 : 0)}°</output></span>
+              <span><b>{t("水平视场角")}</b><output>{camera.horizontalFieldOfViewDegrees.toFixed(camera.horizontalFieldOfViewDegrees < 10 ? 1 : 0)}°</output></span>
               <input type="range" min="0.5" max="140" step="0.1" value={camera.horizontalFieldOfViewDegrees} onChange={(event) => setCamera((current) => ({ ...current, horizontalFieldOfViewDegrees: Number(event.target.value) }))} />
-              <small>画面横向覆盖的角宽；数值越小，放大程度越高。单位为度。</small>
+              <small>{t("画面横向覆盖的角宽；数值越小，放大程度越高。单位为度。")}</small>
             </label>
             <label className="planetarium-range">
-              <span><b>盘面仰角</b><output>{camera.elevationDegrees.toFixed(1)}°</output></span>
+              <span><b>{t("盘面仰角")}</b><output>{camera.elevationDegrees.toFixed(1)}°</output></span>
               <input disabled={centreLocked} type="range" min="-89.9" max="89.9" step="0.1" value={camera.elevationDegrees} onChange={(event) => setCamera((current) => ({ ...current, elevationDegrees: Number(event.target.value) }))} />
-              <small>{centreLocked?"关闭中心锁定后可调整。":""}视线离开银河盘面的角度；正值朝盘面上方，负值朝下方。单位为度。</small>
+              <small>{centreLocked?t("关闭中心锁定后可调整。"):""}{t("视线离开银河盘面的角度；正值朝盘面上方，负值朝下方。单位为度。")}</small>
             </label>
-            <p className="control-definition">行星模式下，镜头保持当地竖直方向，银河带随行星地平朝向呈现相应倾斜；进入无大气模式后，以银河盘上方作为画面向上方向。</p>
-            <p className="control-definition">银河坐标网格表示以银河中心坐标轴为基准的经纬角线，只帮助判断视线方向，不表示恒星或银河辉光。</p>
+            <p className="control-definition">{t("行星模式下，镜头保持当地竖直方向，银河带随行星地平朝向呈现相应倾斜；进入无大气模式后，以银河盘上方作为画面向上方向。")}</p>
+            <p className="control-definition">{t("银河坐标网格表示以银河中心坐标轴为基准的经纬角线，只帮助判断视线方向，不表示恒星或银河辉光。")}</p>
             <div className="overlay-switches">
-              <label><input type="checkbox" checked={showCoordinateGrid} onChange={(event) => setShowCoordinateGrid(event.target.checked)} /><span>银河坐标网格</span></label>
-              <label><input type="checkbox" checked={showGalacticPlane} onChange={(event) => setShowGalacticPlane(event.target.checked)} /><span>银河盘面基准线</span></label>
-              <label><input type="checkbox" checked={showBenchmarkLabels} onChange={(event) => setShowBenchmarkLabels(event.target.checked)} /><span>{scope === "galaxy-prediction" ? "亮星名称" : "方向核验源标签"}</span></label>
-              <label><input type="checkbox" checked={showExtragalactic} onChange={(event) => setShowExtragalactic(event.target.checked)} /><span>银河系外星系</span></label>
-              <label><input type="checkbox" checked={showDeepSkyImages} onChange={(event) => setShowDeepSkyImages(event.target.checked)} /><span>深空观测影像</span></label>
-              <label><input type="checkbox" checked={enhanceDeepSkyScale} onChange={(event) => setEnhanceDeepSkyScale(event.target.checked)} /><span>影像辨认尺度增强</span></label>
+              <label><input type="checkbox" checked={showCoordinateGrid} onChange={(event) => setShowCoordinateGrid(event.target.checked)} /><span>{t("银河坐标网格")}</span></label>
+              <label><input type="checkbox" checked={showGalacticPlane} onChange={(event) => setShowGalacticPlane(event.target.checked)} /><span>{t("银河盘面基准线")}</span></label>
+              <label><input type="checkbox" checked={showBenchmarkLabels} onChange={(event) => setShowBenchmarkLabels(event.target.checked)} /><span>{scope === "galaxy-prediction" ? t("亮星名称") : t("方向核验源标签")}</span></label>
+              <label><input type="checkbox" checked={showExtragalactic} onChange={(event) => setShowExtragalactic(event.target.checked)} /><span>{t("银河系外星系")}</span></label>
+              <label><input type="checkbox" checked={showDeepSkyImages} onChange={(event) => setShowDeepSkyImages(event.target.checked)} /><span>{t("深空观测影像")}</span></label>
+              <label><input type="checkbox" checked={enhanceDeepSkyScale} onChange={(event) => setEnhanceDeepSkyScale(event.target.checked)} /><span>{t("影像辨认尺度增强")}</span></label>
             </div>
-            <div data-guide="response" className="observation-modes"><span>感光响应</span><div><button className={observationMode === "naked-eye" ? "is-active" : ""} onClick={() => setObservationMode("naked-eye")} type="button">裸眼</button><button className={observationMode === "dark-adapted" ? "is-active" : ""} onClick={() => setObservationMode("dark-adapted")} type="button">暗适应</button><button className={observationMode === "camera" ? "is-active" : ""} onClick={() => setObservationMode("camera")} type="button">相机</button><button className={observationMode === "near-infrared" ? "is-active" : ""} onClick={() => setObservationMode("near-infrared")} type="button">近红外</button></div><p>{observationModeDescription(observationMode)}</p></div>
-            <div className="observation-modes"><span>显示色彩</span><div><button className={galaxyColourGrade === "observational" ? "is-active" : ""} onClick={() => setGalaxyColourGrade("observational")} type="button">观测映射</button><button className={galaxyColourGrade === "immersive" ? "is-active" : ""} onClick={() => setGalaxyColourGrade("immersive")} type="button">沉浸增强</button></div><p>沉浸增强只提高相机画面的色彩分离和局部对比度，不改变天体位置、距离、星数、银河宽度或尘埃消光。</p></div>
-            <p className="control-definition">深空观测影像来自欧洲南方天文台、哈勃望远镜及巡天项目，只在可见光相机模式显示。辨认尺度增强会放大角尺寸过小的影像，但不会改变物理模型；关闭后恢复计算角尺度。</p>
-            <label className="planetarium-range"><span><b>显示曝光</b><output>{displayExposureStops > 0 ? "+" : ""}{displayExposureStops.toFixed(1)} 级</output></span>
+            <div data-guide="response" className="observation-modes"><span>{t("感光响应")}</span><div><button className={observationMode === "naked-eye" ? "is-active" : ""} onClick={() => setObservationMode("naked-eye")} type="button">{t("裸眼")}</button><button className={observationMode === "dark-adapted" ? "is-active" : ""} onClick={() => setObservationMode("dark-adapted")} type="button">{t("暗适应")}</button><button className={observationMode === "camera" ? "is-active" : ""} onClick={() => setObservationMode("camera")} type="button">{t("相机")}</button><button className={observationMode === "near-infrared" ? "is-active" : ""} onClick={() => setObservationMode("near-infrared")} type="button">{t("近红外")}</button></div><p>{t(observationModeDescription(observationMode))}</p></div>
+            <div className="observation-modes"><span>{t("显示色彩")}</span><div><button className={galaxyColourGrade === "observational" ? "is-active" : ""} onClick={() => setGalaxyColourGrade("observational")} type="button">{t("观测映射")}</button><button className={galaxyColourGrade === "immersive" ? "is-active" : ""} onClick={() => setGalaxyColourGrade("immersive")} type="button">{t("沉浸增强")}</button></div><p>{t("沉浸增强只提高相机画面的色彩分离和局部对比度，不改变天体位置、距离、星数、银河宽度或尘埃消光。")}</p></div>
+            <p className="control-definition">{t("深空观测影像来自欧洲南方天文台、哈勃望远镜及巡天项目，只在可见光相机模式显示。辨认尺度增强会放大角尺寸过小的影像，但不会改变物理模型；关闭后恢复计算角尺度。")}</p>
+            <label className="planetarium-range"><span><b>{t("显示曝光")}</b><output>{displayExposureStops > 0 ? "+" : ""}{displayExposureStops.toFixed(1)}{t(" 级")}</output></span>
               <input type="range" min="-2" max="3" step="0.1" value={displayExposureStops} onChange={event => setDisplayExposureStops(Number(event.target.value))} />
-              <small>用于调节屏幕上的星光亮度。每增加 1 级，显示前的线性星光信号加倍；越大越亮，也越容易失去亮部细节。它不是实际快门时间。</small>
+              <small>{t("用于调节屏幕上的星光亮度。每增加 1 级，显示前的线性星光信号加倍；越大越亮，也越容易失去亮部细节。它不是实际快门时间。")}</small>
             </label>
             <div className="atmosphere-controls">
-              <span>行星大气</span>
+              <span>{t("行星大气")}</span>
               <div className="atmosphere-cards">
-                <button type="button" className={atmospherePreset === "space" ? "is-active" : ""} onClick={() => setAtmospherePreset("space")}><strong>无大气</strong><small>轨道或深空视点</small></button>
-                <button type="button" className={atmospherePreset === "earth-clear" ? "is-active" : ""} onClick={() => setAtmospherePreset("earth-clear")}><strong>晴朗</strong><small>较低消光与地平辉光</small></button>
-                <button type="button" className={atmospherePreset === "earth-hazy" ? "is-active" : ""} onClick={() => setAtmospherePreset("earth-hazy")}><strong>轻雾</strong><small>较强散射与近地平衰减</small></button>
+                <button type="button" className={atmospherePreset === "space" ? "is-active" : ""} onClick={() => setAtmospherePreset("space")}><strong>{t("无大气")}</strong><small>{t("轨道或深空视点")}</small></button>
+                <button type="button" className={atmospherePreset === "earth-clear" ? "is-active" : ""} onClick={() => setAtmospherePreset("earth-clear")}><strong>{t("晴朗")}</strong><small>{t("较低消光与地平辉光")}</small></button>
+                <button type="button" className={atmospherePreset === "earth-hazy" ? "is-active" : ""} onClick={() => setAtmospherePreset("earth-hazy")}><strong>{t("轻雾")}</strong><small>{t("较强散射与近地平衰减")}</small></button>
               </div>
               {atmospherePreset !== "space" && <>
-                <label className="planetarium-range"><span><b>行星地平倾角</b><output>{planetInclinationDegrees}°</output></span>
+                <label className="planetarium-range"><span><b>{t("行星地平倾角")}</b><output>{planetInclinationDegrees}°</output></span>
                   <input type="range" min="-75" max="75" step="1" value={planetInclinationDegrees} onChange={event => setPlanetInclinationDegrees(Number(event.target.value))} />
-                  <small>行星地平面相对银河盘的倾斜角，单位为度，没有优劣之分。它改变哪些天体位于地平线上方；与盘面仰角不同，这里转动行星坐标系，镜头不转动。当前是可控的假想行星环境，不代表地球某个地点。</small>
+                  <small>{t("行星地平面相对银河盘的倾斜角，单位为度，没有优劣之分。它改变哪些天体位于地平线上方；与盘面仰角不同，这里转动行星坐标系，镜头不转动。当前是可控的假想行星环境，不代表地球某个地点。")}</small>
                 </label>
-                <div className="observation-modes twilight-presets"><span>当地晨昏</span><div><button type="button" className={sunAltitudeDegrees === -18 ? "is-active" : ""} onClick={() => setSunAltitudeDegrees(-18)}>深夜</button><button type="button" className={sunAltitudeDegrees === -12 ? "is-active" : ""} onClick={() => setSunAltitudeDegrees(-12)}>天文暮光</button><button type="button" className={sunAltitudeDegrees === -6 ? "is-active" : ""} onClick={() => setSunAltitudeDegrees(-6)}>民用暮光</button><button type="button" className={sunAltitudeDegrees === 0 ? "is-active" : ""} onClick={() => setSunAltitudeDegrees(0)}>日出日落</button><button type="button" className={sunAltitudeDegrees === 30 ? "is-active" : ""} onClick={() => setSunAltitudeDegrees(30)}>白昼</button></div></div>
-                <label className="planetarium-range twilight-range"><span><b>当地恒星高度</b><output>{sunAltitudeDegrees > 0 ? "+" : ""}{sunAltitudeDegrees.toFixed(0)}°</output></span><input type="range" min="-24" max="60" step="1" value={sunAltitudeDegrees} onChange={(event) => setSunAltitudeDegrees(Number(event.target.value))} /><small>当地恒星高度表示照亮行星大气的恒星相对地平线的角度；负值在地平线下，正值在地平线上。它通过大气散射决定深夜、暮光和白昼。</small></label>
-                <label className="planetarium-range twilight-range"><span><b>当地恒星方位</b><output>{sunAzimuthDegrees.toFixed(0)}°</output></span><input type="range" min="0" max="360" step="1" value={sunAzimuthDegrees} onChange={(event) => setSunAzimuthDegrees(Number(event.target.value))} /><small>当地恒星方位表示光源沿地平线一周的方向，单位为度；它决定暮光与日光在天空哪一侧最亮。</small></label>
+                <div className="observation-modes twilight-presets"><span>{t("当地晨昏")}</span><div><button type="button" className={sunAltitudeDegrees === -18 ? "is-active" : ""} onClick={() => setSunAltitudeDegrees(-18)}>{t("深夜")}</button><button type="button" className={sunAltitudeDegrees === -12 ? "is-active" : ""} onClick={() => setSunAltitudeDegrees(-12)}>{t("天文暮光")}</button><button type="button" className={sunAltitudeDegrees === -6 ? "is-active" : ""} onClick={() => setSunAltitudeDegrees(-6)}>{t("民用暮光")}</button><button type="button" className={sunAltitudeDegrees === 0 ? "is-active" : ""} onClick={() => setSunAltitudeDegrees(0)}>{t("日出日落")}</button><button type="button" className={sunAltitudeDegrees === 30 ? "is-active" : ""} onClick={() => setSunAltitudeDegrees(30)}>{t("白昼")}</button></div></div>
+                <label className="planetarium-range twilight-range"><span><b>{t("当地恒星高度")}</b><output>{sunAltitudeDegrees > 0 ? "+" : ""}{sunAltitudeDegrees.toFixed(0)}°</output></span><input type="range" min="-24" max="60" step="1" value={sunAltitudeDegrees} onChange={(event) => setSunAltitudeDegrees(Number(event.target.value))} /><small>{t("当地恒星高度表示照亮行星大气的恒星相对地平线的角度；负值在地平线下，正值在地平线上。它通过大气散射决定深夜、暮光和白昼。")}</small></label>
+                <label className="planetarium-range twilight-range"><span><b>{t("当地恒星方位")}</b><output>{sunAzimuthDegrees.toFixed(0)}°</output></span><input type="range" min="0" max="360" step="1" value={sunAzimuthDegrees} onChange={(event) => setSunAzimuthDegrees(Number(event.target.value))} /><small>{t("当地恒星方位表示光源沿地平线一周的方向，单位为度；它决定暮光与日光在天空哪一侧最亮。")}</small></label>
               </>}
             </div>
           </div>
@@ -1386,14 +1394,14 @@ export function PlanetariumScene() {
 
         {activePanel === "location" && (
           <div className="panel-body location-panel">
-            <div className="panel-heading"><div><span>观察者位置</span><h2>银河盘导航</h2></div><button type="button" onClick={() => setActivePanel(null)} aria-label="关闭位置设置">×</button></div>
-            <section data-guide="positions" className="observer-presets" aria-label="观察位置跳转">
-              <h3>选择出发位置</h3><p>点击坐标会移动观察者，暂停并重置时间。朝向保持不变；开启中心锁定时，朝向会持续跟随银河中心。</p>
-              <p>坐标依次为横向、纵向、垂直方向，单位都是秒差距。1 秒差距约为 3.26 光年；正负号表示方向，绝对值越大表示离对应坐标平面越远，没有优劣之分。</p>
-              <div>{observerPresets.map(preset=><button key={preset.id} type="button" aria-pressed={Math.hypot(observerPositionParsec.x-preset.position.x,observerPositionParsec.y-preset.position.y,observerPositionParsec.z-preset.position.z)<.001} onClick={()=>{cancelSkyPointer();setScope("galaxy-prediction");relocateObserver({...preset.position});setNavigationNotice(`已跳转至${preset.name}，模拟时间已归零。${centreLocked?"继续锁定银河中心。":"当前朝向保持不变。"}`);}}><strong>{preset.name}</strong><span>{preset.description}</span><small>{preset.position.x.toLocaleString('zh-CN')} / {preset.position.y.toLocaleString('zh-CN')} / {preset.position.z.toLocaleString('zh-CN')}</small></button>)}</div>
+            <div className="panel-heading"><div><span>{t("观察者位置")}</span><h2>{t("银河盘导航")}</h2></div><button type="button" onClick={() => setActivePanel(null)} aria-label={t("关闭位置设置")}>×</button></div>
+            <section data-guide="positions" className="observer-presets" aria-label={t("观察位置跳转")}>
+              <h3>{t("选择出发位置")}</h3><p>{t("点击坐标会移动观察者，暂停并重置时间。朝向保持不变；开启中心锁定时，朝向会持续跟随银河中心。")}</p>
+              <p>{t("坐标依次为横向、纵向、垂直方向，单位都是秒差距。1 秒差距约为 3.26 光年；正负号表示方向，绝对值越大表示离对应坐标平面越远，没有优劣之分。")}</p>
+              <div>{observerPresets.map(preset=><button key={preset.id} type="button" aria-pressed={Math.hypot(observerPositionParsec.x-preset.position.x,observerPositionParsec.y-preset.position.y,observerPositionParsec.z-preset.position.z)<.001} onClick={()=>{cancelSkyPointer();setScope("galaxy-prediction");relocateObserver({...preset.position});setNavigationNotice(`已跳转至${t(preset.name)}，模拟时间已归零。${centreLocked?"继续锁定银河中心。":"当前朝向保持不变。"}`);}}><strong>{t(preset.name)}</strong><span>{t(preset.description)}</span><small>{preset.position.x.toLocaleString(locale)} / {preset.position.y.toLocaleString(locale)} / {preset.position.z.toLocaleString(locale)}</small></button>)}</div>
             </section>
-            <p className="control-definition">银河中心为坐标原点。横向负方向指向太阳，纵向位于银河盘面内，垂直正方向朝银河盘上方。下面的距离是到银河中心的直线距离，数值越大表示越远。</p>
-            <svg ref={mapRef} className={`galaxy-minimap ${isMapDragging ? "is-dragging" : ""}`} viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} role="img" aria-label="银河盘面位置图；点击或拖动观察者点可连续改变位置" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setIsMapDragging(true); setPositionFromMapPointer(event.clientX, event.clientY); }} onPointerMove={(event) => { if (isMapDragging) setPositionFromMapPointer(event.clientX, event.clientY); }} onPointerUp={(event) => { event.currentTarget.releasePointerCapture(event.pointerId); setIsMapDragging(false); }} onPointerCancel={() => setIsMapDragging(false)}>
+            <p className="control-definition">{t("银河中心为坐标原点。横向负方向指向太阳，纵向位于银河盘面内，垂直正方向朝银河盘上方。下面的距离是到银河中心的直线距离，数值越大表示越远。")}</p>
+            <svg ref={mapRef} className={`galaxy-minimap ${isMapDragging ? "is-dragging" : ""}`} viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} role="img" aria-label={t("银河盘面位置图；点击或拖动观察者点可连续改变位置")} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setIsMapDragging(true); setPositionFromMapPointer(event.clientX, event.clientY); }} onPointerMove={(event) => { if (isMapDragging) setPositionFromMapPointer(event.clientX, event.clientY); }} onPointerUp={(event) => { event.currentTarget.releasePointerCapture(event.pointerId); setIsMapDragging(false); }} onPointerCancel={() => setIsMapDragging(false)}>
               <circle cx={MAP_CENTRE_X} cy={MAP_CENTRE_Y} r={MAP_RADIUS} className="mini-disc" />
               <ellipse cx={MAP_CENTRE_X} cy={MAP_CENTRE_Y} rx="25" ry="8" transform={`rotate(-27 ${MAP_CENTRE_X} ${MAP_CENTRE_Y})`} className="mini-bar" />
               <path d="M 150 115 C 176 94, 202 95, 223 112 C 238 125, 242 143, 235 158" className="mini-spiral" />
@@ -1404,56 +1412,56 @@ export function PlanetariumScene() {
               <line x1={MAP_CENTRE_X - MAP_RADIUS} y1={MAP_CENTRE_Y} x2={MAP_CENTRE_X + MAP_RADIUS} y2={MAP_CENTRE_Y} className="mini-axis" />
               <line x1={MAP_CENTRE_X} y1={MAP_CENTRE_Y - MAP_RADIUS} x2={MAP_CENTRE_X} y2={MAP_CENTRE_Y + MAP_RADIUS} className="mini-axis" />
               <circle cx={MAP_CENTRE_X} cy={MAP_CENTRE_Y} r="3.5" className="mini-centre" />
-              <text x={MAP_CENTRE_X + 8} y={MAP_CENTRE_Y - 7}>银河中心</text>
+              <text x={MAP_CENTRE_X + 8} y={MAP_CENTRE_Y - 7}>{t("银河中心")}</text>
               <circle cx={sunMapPoint.x} cy={sunMapPoint.y} r="3" className="mini-sun" />
-              <text x={sunMapPoint.x + 7} y={sunMapPoint.y + 13}>太阳锚点</text>
+              <text x={sunMapPoint.x + 7} y={sunMapPoint.y + 13}>{t("太阳锚点")}</text>
               <line x1={observerMapPoint.x} y1={observerMapPoint.y} x2={viewArrowEnd.x} y2={viewArrowEnd.y} className="mini-view" />
               <circle cx={observerMapPoint.x} cy={observerMapPoint.y} r="7" className="mini-observer-halo" />
               <circle cx={observerMapPoint.x} cy={observerMapPoint.y} r="3.7" className="mini-observer" />
             </svg>
-            <label className="planetarium-range radius-range"><span><b>银河中心距离</b><output>{formatParsec(radiusParsec)} 秒差距</output></span><input type="range" min="0" max="1" step="0.00001" value={sliderFromRadius(radiusParsec)} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setIsPositionScrubbing(true); }} onPointerUp={() => setIsPositionScrubbing(false)} onBlur={() => setIsPositionScrubbing(false)} onPointerCancel={() => setIsPositionScrubbing(false)} onChange={(event) => relocateObserver(updateRadiusPreservingAzimuth(observerPositionParsec, radiusFromSlider(Number(event.target.value)), positionAzimuthDegrees))} /><small>保持当前银河方位不变，沿银河中心与观察者连线连续移动。恒星方向与距离随滑杆实时变化，尘埃和银河背景在后台更新；探针重新定位会把模拟时间归零。</small></label>
-            <dl className="position-readout"><div><dt>横向坐标</dt><dd>{formatParsec(observerPositionParsec.x)} 秒差距</dd></div><div><dt>纵向坐标</dt><dd>{formatParsec(observerPositionParsec.y)} 秒差距</dd></div><div><dt>垂直坐标</dt><dd>{formatParsec(observerPositionParsec.z)} 秒差距</dd></div><div><dt>银河方位</dt><dd>{positionAzimuthDegrees.toFixed(2)}°</dd></div></dl>
-            <p className="control-definition coordinate-definition">银河方位表示观察者绕银河中心所处的角度，决定站在哪里；它与观察方位不同，后者只决定朝哪里看。单位为度。当前轨道速度为 {observerSpeedKilometresPerSecond.toFixed(1)} 千米/秒，方向由三维速度分量共同决定。</p>
-            <p className="control-definition coordinate-definition">视点移动造成的方向变化称为视差：附近恒星会明显改写原有星座形状，遥远星系只会轻微移动。半人马座 A 是约 380 万秒差距外的星系，不是附近的半人马座恒星；从太阳位置向内移动约 3,200 秒差距时，它的方向变化通常不到约 0.05°。</p>
+            <label className="planetarium-range radius-range"><span><b>{t("银河中心距离")}</b><output>{formatParsec(radiusParsec)}{t(" 秒差距")}</output></span><input type="range" min="0" max="1" step="0.00001" value={sliderFromRadius(radiusParsec)} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setIsPositionScrubbing(true); }} onPointerUp={() => setIsPositionScrubbing(false)} onBlur={() => setIsPositionScrubbing(false)} onPointerCancel={() => setIsPositionScrubbing(false)} onChange={(event) => relocateObserver(updateRadiusPreservingAzimuth(observerPositionParsec, radiusFromSlider(Number(event.target.value)), positionAzimuthDegrees))} /><small>{t("保持当前银河方位不变，沿银河中心与观察者连线连续移动。恒星方向与距离随滑杆实时变化，尘埃和银河背景在后台更新；探针重新定位会把模拟时间归零。")}</small></label>
+            <dl className="position-readout"><div><dt>{t("横向坐标")}</dt><dd>{formatParsec(observerPositionParsec.x)}{t(" 秒差距")}</dd></div><div><dt>{t("纵向坐标")}</dt><dd>{formatParsec(observerPositionParsec.y)}{t(" 秒差距")}</dd></div><div><dt>{t("垂直坐标")}</dt><dd>{formatParsec(observerPositionParsec.z)}{t(" 秒差距")}</dd></div><div><dt>{t("银河方位")}</dt><dd>{positionAzimuthDegrees.toFixed(2)}°</dd></div></dl>
+            <p className="control-definition coordinate-definition">{t("银河方位表示观察者绕银河中心所处的角度，决定站在哪里；它与观察方位不同，后者只决定朝哪里看。单位为度。当前轨道速度为 ")}{observerSpeedKilometresPerSecond.toFixed(1)}{t(" 千米/秒，方向由三维速度分量共同决定。")}</p>
+            <p className="control-definition coordinate-definition">{t("视点移动造成的方向变化称为视差：附近恒星会明显改写原有星座形状，遥远星系只会轻微移动。半人马座 A 是约 380 万秒差距外的星系，不是附近的半人马座恒星；从太阳位置向内移动约 3,200 秒差距时，它的方向变化通常不到约 0.05°。")}</p>
           </div>
         )}
 
         {activePanel === "physics" && (
           <div className="panel-body physics-panel">
-            <div className="panel-heading"><div><span>科学状态</span><h2>物理与数据来源</h2></div><button type="button" onClick={() => setActivePanel(null)} aria-label="关闭物理状态">×</button></div>
-            <div className="physics-state-card is-prediction"><i aria-hidden="true" /><div><strong>观测约束下的模型预测</strong><p>当前画面不是空白占位，也不声称是完整真值。实测星点与模型推断分别标记；三维恒星密度和尘埃决定银河带的亮度、宽度与暗带。新增的小尺度尘埃起伏是固定三维统计模型，不是已观测云团的位置。</p></div></div>
+            <div className="panel-heading"><div><span>{t("科学状态")}</span><h2>{t("物理与数据来源")}</h2></div><button type="button" onClick={() => setActivePanel(null)} aria-label={t("关闭物理状态")}>×</button></div>
+            <div className="physics-state-card is-prediction"><i aria-hidden="true" /><div><strong>{t("观测约束下的模型预测")}</strong><p>{t("当前画面不是空白占位，也不声称是完整真值。实测星点与模型推断分别标记；三维恒星密度和尘埃决定银河带的亮度、宽度与暗带。新增的小尺度尘埃起伏是固定三维统计模型，不是已观测云团的位置。")}</p></div></div>
             <div className="data-layer-list">
-              <div><i className="observed" /><span><strong>直接观测</strong><small>耶鲁亮星表补足 6.5 星等以内的最亮恒星；Gaia 第三批数据提供 6.5 至 8.5 星等（表示从观测位置看到的亮度，数值越小越亮）的恒星，具备完整六维相空间的 {gaiaCatalogueState === "ready" ? `${gaiaBrightStars.length.toLocaleString("zh-CN")} 颗恒星` : gaiaCatalogueState === "loading" ? "载入中" : "载入失败"}。六维相空间表示三个位置分量与三个速度分量。</small></span></div>
-              <div><i className="inferred" /><span><strong>模型推断</strong><small>{modelPopulationEmitters.length.toLocaleString("zh-CN")} 个恒星族群示踪点；银河盘、厚盘、棒、核球与核星盘连续辐射场。</small></span></div>
-              <div><i className="observed" /><span><strong>银河系外天体</strong><small>{cataloguedExtragalacticSources.length} 个有目录约束的近邻星系，加上 {statisticalBackgroundGalaxies.length.toLocaleString("zh-CN")} 个统计背景星系；距离、角大小和银河尘埃随视点重算。</small></span></div>
-              <div><i className="observed" /><span><strong>深空观测影像</strong><small>{deepSkyImageSources.length} 个天文观测影像；三张改用完整宽视场照片，图幅与朝向按来源说明投影。照片色彩不代表裸眼颜色。</small></span></div>
-              <div><i className="uncertain" /><span><strong>不确定部分</strong><small>远离太阳的单颗恒星身份、螺旋臂细节和全银河尘埃小尺度结构；属于统计近似，尚未完成全银河校准，不保证具体星座。</small></span></div>
+              <div><i className="observed" /><span><strong>{t("直接观测")}</strong><small>{t("耶鲁亮星表补足 6.5 星等以内的最亮恒星；Gaia 第三批数据提供 6.5 至 8.5 星等（表示从观测位置看到的亮度，数值越小越亮）的恒星，具备完整六维相空间的 ")}{gaiaCatalogueState === "ready" ? t(`${gaiaBrightStars.length.toLocaleString(locale)} 颗恒星`) : gaiaCatalogueState === "loading" ? t("载入中") : t("载入失败")}{t("。六维相空间表示三个位置分量与三个速度分量。")}</small></span></div>
+              <div><i className="inferred" /><span><strong>{t("模型推断")}</strong><small>{modelPopulationEmitters.length.toLocaleString(locale)}{t(" 个恒星族群示踪点；银河盘、厚盘、棒、核球与核星盘连续辐射场。")}</small></span></div>
+              <div><i className="observed" /><span><strong>{t("银河系外天体")}</strong><small>{cataloguedExtragalacticSources.length}{t(" 个有目录约束的近邻星系，加上 ")}{statisticalBackgroundGalaxies.length.toLocaleString(locale)}{t(" 个统计背景星系；距离、角大小和银河尘埃随视点重算。")}</small></span></div>
+              <div><i className="observed" /><span><strong>{t("深空观测影像")}</strong><small>{deepSkyImageSources.length}{t(" 个天文观测影像；三张改用完整宽视场照片，图幅与朝向按来源说明投影。照片色彩不代表裸眼颜色。")}</small></span></div>
+              <div><i className="uncertain" /><span><strong>{t("不确定部分")}</strong><small>{t("远离太阳的单颗恒星身份、螺旋臂细节和全银河尘埃小尺度结构；属于统计近似，尚未完成全银河校准，不保证具体星座。")}</small></span></div>
             </div>
-            <div className="physics-readout"><div><span>当前画面</span><strong>{scope === "galaxy-prediction" ? "实测、统计推断与系外天体叠加" : "确定性数值核验"}</strong></div><div><span>逐星三维重投影</span><strong>已启用；恒星位置减去观察者位置后重新投向相机</strong></div><div><span>三维尘埃</span><strong>{scope === "galaxy-prediction" ? "逐视线积分；波长相关红化" : "核验层不接入"}</strong></div><div><span>未分辨星光</span><strong>{scope === "galaxy-prediction" ? "96 段发光与吸收联合积分" : "核验层不注入"}</strong></div><div><span>运动</span><strong>Gaia 实测速度与族群初态传播；观察者跃蛙积分</strong></div><div><span>时间</span><strong>{formatTimeYears(simulationTimeYears)} · {new Intl.NumberFormat("zh-CN").format(timeSpeedYearsPerSecond)} 年/秒</strong></div><div><span>位置驱动视觉参数</span><strong>无；响应只由感光和大气决定</strong></div></div>
-            <details className="model-details"><summary>本轮科学与显示改进</summary>
-              <p>银河光采用分段发光与吸收的解析积分，计入光源所在分段自身的尘埃遮挡。视点和恒星运动连续重投影；计算中的尘埃与背景暂用最近结果，并显示更新状态。</p>
-              <p>行星地景独立于银河盘，远景与近地面共同使用相机射线投影。地貌是艺术素材，不是指定行星的实测地形。</p>
-              <p>连续银河光、点源亮度和大气仍是可视化近似；没有完成统一绝对测光标定、恒星样本完备性校准及两类星光的严格去重。恒星运动仍采用直线外推，时间越长误差可能越大。</p>
-              <a href="/data/SCIENCE_DISPLAY_UPDATE.md">模型、近似与依据</a>
+            <div className="physics-readout"><div><span>{t("当前画面")}</span><strong>{scope === "galaxy-prediction" ? t("实测、统计推断与系外天体叠加") : t("确定性数值核验")}</strong></div><div><span>{t("逐星三维重投影")}</span><strong>{t("已启用；恒星位置减去观察者位置后重新投向相机")}</strong></div><div><span>{t("三维尘埃")}</span><strong>{scope === "galaxy-prediction" ? t("逐视线积分；波长相关红化") : t("核验层不接入")}</strong></div><div><span>{t("未分辨星光")}</span><strong>{scope === "galaxy-prediction" ? t("96 段发光与吸收联合积分") : t("核验层不注入")}</strong></div><div><span>{t("运动")}</span><strong>{t("Gaia 实测速度与族群初态传播；观察者跃蛙积分")}</strong></div><div><span>{t("时间")}</span><strong>{t(formatTimeYears(simulationTimeYears, locale))} · {new Intl.NumberFormat(locale).format(timeSpeedYearsPerSecond)}{t(" 年/秒")}</strong></div><div><span>{t("位置驱动视觉参数")}</span><strong>{t("无；响应只由感光和大气决定")}</strong></div></div>
+            <details className="model-details"><summary>{t("本轮科学与显示改进")}</summary>
+              <p>{t("银河光采用分段发光与吸收的解析积分，计入光源所在分段自身的尘埃遮挡。视点和恒星运动连续重投影；计算中的尘埃与背景暂用最近结果，并显示更新状态。")}</p>
+              <p>{t("行星地景独立于银河盘，远景与近地面共同使用相机射线投影。地貌是艺术素材，不是指定行星的实测地形。")}</p>
+              <p>{t("连续银河光、点源亮度和大气仍是可视化近似；没有完成统一绝对测光标定、恒星样本完备性校准及两类星光的严格去重。恒星运动仍采用直线外推，时间越长误差可能越大。")}</p>
+              <a href="/data/SCIENCE_DISPLAY_UPDATE.md">{t("模型、近似与依据")}</a>
             </details>
-            <details className="model-details"><summary>观测照片署名</summary>
-              <p><a href="https://www.eso.org/public/images/eso1723a/" target="_blank" rel="noreferrer">猎户座星云</a>：ESO/G. Beccari</p>
-              <p><a href="https://www.eso.org/public/images/eso1119b/" target="_blank" rel="noreferrer">欧米茄星团</a>：ESO/INAF-VST/OmegaCAM. Acknowledgement: A. Grado, L. Limatola/INAF-Capodimonte Observatory</p>
-              <p><a href="https://esahubble.org/images/heic1502b/" target="_blank" rel="noreferrer">仙女座星系</a>：NASA, ESA, Digitized Sky Survey 2 (Acknowledgement: Davide De Martin)</p>
-              <p>以上三张按<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">署名许可第四版</a>使用；显示时做天空底色扣除与边缘渐隐。<a href="https://www.eso.org/public/copyright/" target="_blank" rel="noreferrer">欧洲南方天文台条款</a> · <a href="https://esahubble.org/copyright/" target="_blank" rel="noreferrer">欧洲空间局哈勃条款</a></p>
-              <p>昴星团：NASA, ESA, AURA/Caltech, Palomar Observatory；<a href="https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-45/" target="_blank" rel="noreferrer">来源说明</a>。</p>
+            <details className="model-details"><summary>{t("观测照片署名")}</summary>
+              <p><a href="https://www.eso.org/public/images/eso1723a/" target="_blank" rel="noreferrer">{t("猎户座星云")}</a>：ESO/G. Beccari</p>
+              <p><a href="https://www.eso.org/public/images/eso1119b/" target="_blank" rel="noreferrer">{t("欧米茄星团")}</a>：ESO/INAF-VST/OmegaCAM. Acknowledgement: A. Grado, L. Limatola/INAF-Capodimonte Observatory</p>
+              <p><a href="https://esahubble.org/images/heic1502b/" target="_blank" rel="noreferrer">{t("仙女座星系")}</a>：NASA, ESA, Digitized Sky Survey 2 (Acknowledgement: Davide De Martin)</p>
+              <p>{t("以上三张按")}<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">{t("署名许可第四版")}</a>{t("使用；显示时做天空底色扣除与边缘渐隐。")}<a href="https://www.eso.org/public/copyright/" target="_blank" rel="noreferrer">{t("欧洲南方天文台条款")}</a> · <a href="https://esahubble.org/copyright/" target="_blank" rel="noreferrer">{t("欧洲空间局哈勃条款")}</a></p>
+              <p>{t("昴星团：NASA, ESA, AURA/Caltech, Palomar Observatory；")}<a href="https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-45/" target="_blank" rel="noreferrer">{t("来源说明")}</a>。</p>
             </details>
-            <details className="model-details"><summary>仍未完成的严格生产验证</summary><p>当前版本已经能生成物理来源明确的银河天幕，但完整生产声明仍需要银河旋转曲线、星数分布、太阳位置全天亮度、内银河红外星数和尘埃后验样本的联合验收。尚未完成的项目不会让画面变空，而会继续作为不确定性显示。</p><ul className="compact-blockers">{productionRenderBlockers.slice(0, 4).map((blocker) => <li key={blocker}>{blocker}</li>)}</ul><a href="/data/PHYSICAL_MODEL_AND_DATA_ARCHITECTURE.md">查看完整物理架构与数据来源</a><a href="/data/gaia-dr3-bright-6d-source.json">查看 Gaia 六维样本来源与筛选条件</a><a href="/data/deep-sky-image-sources.json">查看深空影像来源与色彩说明</a><a href="/data/terrain-asset-source.json">查看行星地貌素材与投影说明</a></details>
+            <details className="model-details"><summary>{t("仍未完成的严格生产验证")}</summary><p>{t("当前版本已经能生成物理来源明确的银河天幕，但完整生产声明仍需要银河旋转曲线、星数分布、太阳位置全天亮度、内银河红外星数和尘埃后验样本的联合验收。尚未完成的项目不会让画面变空，而会继续作为不确定性显示。")}</p><ul className="compact-blockers">{productionRenderBlockers.slice(0, 4).map((blocker) => <li key={blocker}>{t(blocker)}</li>)}</ul><a href="/data/PHYSICAL_MODEL_AND_DATA_ARCHITECTURE.md">{t("查看完整物理架构与数据来源")}</a><a href="/data/gaia-dr3-bright-6d-source.json">{t("查看 Gaia 六维样本来源与筛选条件")}</a><a href="/data/deep-sky-image-sources.json">{t("查看深空影像来源与色彩说明")}</a><a href="/data/terrain-asset-source.json">{t("查看行星地貌素材与投影说明")}</a></details>
           </div>
         )}
       </aside>
 
       <footer className="planetarium-statusbar">
-        <div><span>观察者</span><strong>{formatParsec(observerPositionParsec.x)} / {formatParsec(observerPositionParsec.y)} / {formatParsec(observerPositionParsec.z)} 秒差距</strong><em>{scope === "galaxy-prediction" ? "实测 + 模型" : "核验层"}</em></div>
-        <div className="view-readout"><span>方位角 {camera.azimuthDegrees.toFixed(1)}°</span><i aria-hidden="true" /><span>仰角 {camera.elevationDegrees.toFixed(1)}°</span><i aria-hidden="true" /><span>视场角 {camera.horizontalFieldOfViewDegrees.toFixed(camera.horizontalFieldOfViewDegrees < 10 ? 1 : 0)}°</span></div>
-        <div className="status-actions"><button type="button" onClick={startTutorial}>新手教程</button>{panelButton("view", "观察")}{panelButton("location", "位置跳转")}{panelButton("physics", "物理验证")}</div>
+        <div><span>{t("观察者")}</span><strong>{formatParsec(observerPositionParsec.x)} / {formatParsec(observerPositionParsec.y)} / {formatParsec(observerPositionParsec.z)}{t(" 秒差距")}</strong><em>{scope === "galaxy-prediction" ? t("实测 + 模型") : t("核验层")}</em></div>
+        <div className="view-readout"><span>{t("方位角 ")}{camera.azimuthDegrees.toFixed(1)}°</span><i aria-hidden="true" /><span>{t("仰角 ")}{camera.elevationDegrees.toFixed(1)}°</span><i aria-hidden="true" /><span>{t("视场角 ")}{camera.horizontalFieldOfViewDegrees.toFixed(camera.horizontalFieldOfViewDegrees < 10 ? 1 : 0)}°</span></div>
+        <div className="status-actions"><button type="button" onClick={startTutorial}>{t("新手教程")}</button>{panelButton("view", t("观察"))}{panelButton("location", t("位置跳转"))}{panelButton("physics", t("物理验证"))}</div>
       </footer>
-      <div className="drag-hint">{centreLocked?"持续指向银河中心 · 可滚轮缩放 · 关闭锁定后自由转向":"拖动转向 · 滚轮放大 · 单击天体查看资料 · 按 / 搜索"}</div>
+      <div className="drag-hint">{centreLocked?t("持续指向银河中心 · 可滚轮缩放 · 关闭锁定后自由转向"):t("拖动转向 · 滚轮放大 · 单击天体查看资料 · 按 / 搜索")}</div>
     </main>
   );
 }

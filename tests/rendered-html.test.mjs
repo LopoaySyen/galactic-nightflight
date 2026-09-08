@@ -67,6 +67,8 @@ test("serves a complete English introduction with language navigation", async ()
   for (const text of ["Galactic Nightflight", "Page sections", "Travel", "Time", "Atmosphere", "Star finder", "One galaxy.", "Countless skies.", "Make this sky your own.", "no separate author approval"]) assert.ok(html.includes(text), text);
   assert.match(html, /href="\/" hrefLang="zh-CN"/i);
   assert.match(html, /aria-label="Explore features"/);
+  assert.match(html, /href="\/observe\?lang=en"/);
+  for (const image of ['observatory', 'position-jump', 'star-details']) assert.ok(html.includes(`/guide/en/${image}.jpg`));
 });
 
 test("renders the full-screen observing platform with navigation and repeatable tutorial", async () => {
@@ -167,4 +169,19 @@ test("tab icons resolve on the visiting domain across home and observatory route
   assert.deepEqual(root, source);
   assert.deepEqual(published, source);
   assert.deepEqual([...root.subarray(0, 4)], [0, 0, 1, 0]);
+});
+
+
+test("English observatory renders translated controls with an in-place language switch", async () => {
+  const html = await renderRoute("/observe?lang=en");
+  assert.match(html, /<title>Observatory · Galactic Nightflight<\/title>/);
+  assert.match(html, /<main lang="en" class="planetarium-shell"/);
+  for (const label of ["Search objects", "Galactic centre", "Outer galaxy", "Track centre", "Tutorial", "Position", "Time speed", "Reset time"]) assert.ok(html.includes(label), label);
+  assert.match(html, /class="observatory-language"/);
+  assert.match(html, /href="\/en"/);
+  assert.doesNotMatch(html, /搜索天体|位置跳转|新手教程/);
+  for (const asset of ['look.gif', 'move.gif', 'inspect.gif', 'observatory.jpg', 'position-jump.jpg', 'star-details.jpg']) {
+    const bytes = await readFile(new URL(`../public/guide/en/${asset}`, import.meta.url));
+    assert.ok(bytes.byteLength > 0);
+  }
 });

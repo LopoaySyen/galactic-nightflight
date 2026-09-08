@@ -923,3 +923,19 @@ test('looking at either Galactic pole also handles a blocked direction', () => {
   assert.equal(below.switchToSpace,true);
   assert.equal(below.camera.elevationDegrees,-90);
 });
+
+
+test('live reprojection retains signed reference-extinction corrections', async()=>{
+  const {prepareGalaxyPointSources,projectPreparedGalaxyPointSources}=await import('../lib/rendering/galaxy-star-renderer.ts');
+  const emitter={id:'reference-extinction-probe',role:'observed-bright-star',positionParsec:{x:-5000,y:0,z:0},absoluteVisualMagnitude:0,effectiveTemperatureKelvin:5800};
+  const observer={x:-5010,y:0,z:0};
+  const prepared=prepareGalaxyPointSources([emitter],observer);
+  assert.equal(prepared.length,1);
+  assert.ok(prepared[0].extinctionMagnitude<0,'moving closer removes some reference dust');
+  const camera={azimuthDegrees:0,elevationDegrees:0,horizontalFieldOfViewDegrees:82};
+  const cached=projectPreparedGalaxyPointSources(prepared,camera,800,600);
+  const live=projectPreparedGalaxyPointSources(prepared,camera,800,600,observer,0);
+  assert.equal(live.length,1);
+  nearlyEqual(live[0].apparentVisualMagnitude,cached[0].apparentVisualMagnitude,1e-10);
+  assert.throws(()=>apparentMagnitude(0,10,-1),/non-negative/);
+});

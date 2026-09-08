@@ -1720,3 +1720,36 @@ body:has(.nf-home) {height:auto;min-height:100vh;overflow:visible;}
 .nf-feature-copy h2 {max-inline-size:12em;}
 .nf-feature-copy .nf-body {max-inline-size:32em;}
 @media(max-width:800px){.nf-feature-copy h2,.nf-guide h2,.nf-source h2{font-size:clamp(28px,4.2vw,34px);}.nf-english .nf-feature-copy h2,.nf-english .nf-guide h2,.nf-english .nf-source h2{font-size:clamp(29px,5vw,39px);}}
+
+/* Language controls share one layer; switching preserves the observing scene. */
+.observatory-header-actions {position:absolute;top:24px;right:24px;z-index:20;display:flex;align-items:center;gap:8px;}
+.observatory-header-actions .immersion-toggle {position:static;}
+.observatory-language {padding:9px 12px;border:1px solid var(--line-strong);border-radius:22px;background:var(--glass);color:var(--text);font:inherit;font-size:13px;cursor:pointer;}
+.observatory-language:hover {border-color:var(--amber);color:#fff;}
+.planetarium-topbar {padding-right:245px;}
+.planetarium-brand>a {pointer-events:auto;}
+.planetarium-shell[lang="en"] .planetarium-brand strong {font-size:16px;letter-spacing:.01em;}
+.planetarium-shell[lang="en"] .planetarium-brand small {letter-spacing:.03em;}
+.planetarium-shell[lang="en"] .planetarium-rail {width:116px;}
+.planetarium-shell[lang="en"] .planetarium-rail button {font-size:12px;line-height:1.3;padding-inline:5px;}
+.planetarium-shell[lang="en"] .rail-section-label {font-size:10px;letter-spacing:.06em;}
+.planetarium-shell[lang="en"] .scene-claim {font-size:11px;}
+.planetarium-shell[lang="en"] .time-console {gap:10px;}
+.planetarium-shell[lang="en"] .status-actions button {font-size:13px;}
+.planetarium-shell[lang="en"] .star-detail h2 {overflow-wrap:normal;}
+@media(max-width:720px){
+ .observatory-header-actions {top:18px;right:12px;gap:5px;}
+ .observatory-header-actions button {padding:8px 10px;font-size:12px;}
+ .planetarium-topbar {padding-right:175px;}
+ .planetarium-shell[lang="en"] .planetarium-brand strong {font-size:13px;max-width:116px;line-height:1.35;}
+ .planetarium-shell[lang="en"] .planetarium-brand small {font-size:10px;}
+ .planetarium-shell[lang="en"] .planetarium-rail {width:98px;}
+ .planetarium-shell[lang="en"] .status-actions {gap:3px;}
+ .planetarium-shell[lang="en"] .status-actions button {font-size:11px;padding:7px 6px;min-width:0;}
+ .planetarium-shell[lang="en"] .planetarium-statusbar strong {font-size:10px;}
+}
+@media(max-height:600px) and (min-width:721px){.planetarium-shell[lang="en"] .planetarium-rail{width:230px;}}
+
+.planetarium-brand>a small {display:block;}
+
+.planetarium-shell[lang="en"] .star-detail dd small {white-space:nowrap;}

@@ -147,7 +147,9 @@ export function projectPreparedGalaxyPointSources(
       id:source.id, role:source.role, displayName:source.displayName,
       canvasX:(screenX+1)*canvasWidth/2,canvasY:(1-screenY)*canvasHeight/2,
       distanceParsec,
-      apparentVisualMagnitude:liveObserverPositionParsec ? apparentMagnitude(source.absoluteVisualMagnitude,distanceParsec,source.extinctionMagnitude) : source.apparentVisualMagnitude,
+      // Observed sources store a signed correction relative to solar-reference
+      // extinction, not an absolute dust column. Keep the physical API non-negative.
+      apparentVisualMagnitude:liveObserverPositionParsec ? apparentMagnitude(source.absoluteVisualMagnitude,distanceParsec,0)+source.extinctionMagnitude : source.apparentVisualMagnitude,
       extinctionMagnitude:source.extinctionMagnitude,linearRgb:source.linearRgb,
       skyDirection:liveObserverPositionParsec ? {x:x/length,y:y/length,z:z/length} : source.skyDirection,
     });

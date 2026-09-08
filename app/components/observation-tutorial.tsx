@@ -1,7 +1,10 @@
 "use client";
+import { useObservationLanguage } from './observation-language';
+
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {observationTutorialSteps} from '@/lib/rendering/observation-tutorial';
 export function ObservationTutorial({step,onStep,onClose}:{step:number;onStep:(step:number)=>void;onClose:()=>void}){
+  const { t } = useObservationLanguage();
   const content=observationTutorialSteps[step],dialogRef=useRef<HTMLDivElement>(null);
   const [layout,setLayout]=useState<{target:{left:number;top:number;width:number;height:number}|null;left:number;top:number}|null>(null);
   useEffect(()=>{
@@ -42,10 +45,10 @@ export function ObservationTutorial({step,onStep,onClose}:{step:number;onStep:(s
     {layout?.target?<div className="observation-tour-highlight" style={layout.target}/>:<div className="observation-tour-dim"/>}
     <div ref={dialogRef} className="observation-tour-card" role="dialog" aria-modal="true" aria-labelledby="observation-tour-title" aria-describedby="observation-tour-body" tabIndex={-1}
       style={layout?{left:layout.left,top:layout.top}:{left:'50%',top:'50%',transform:'translate(-50%,-50%)'}}>
-      <div className="observation-tour-heading"><span>新手教程 · 第 {step+1} 步，共 {observationTutorialSteps.length} 步</span><button type="button" onClick={onClose}>跳过引导</button></div>
-      <progress max={observationTutorialSteps.length} value={step+1} aria-label="教程进度"/>
-      <h2 id="observation-tour-title">{content.title}</h2><p id="observation-tour-body">{content.body}</p>
-      <div className="observation-tour-actions"><button type="button" onClick={()=>onStep(step-1)} disabled={step===0}>上一步</button><button type="button" onClick={()=>step===observationTutorialSteps.length-1?onClose():onStep(step+1)}>{step===observationTutorialSteps.length-1?'开始观星':'下一步'}</button></div>
+      <div className="observation-tour-heading"><span>{t("新手教程 · 第 ")}{step+1}{t(" 步，共 ")}{observationTutorialSteps.length}{t(" 步")}</span><button type="button" onClick={onClose}>{t("跳过引导")}</button></div>
+      <progress max={observationTutorialSteps.length} value={step+1} aria-label={t("教程进度")}/>
+      <h2 id="observation-tour-title">{t(content.title)}</h2><p id="observation-tour-body">{t(content.body)}</p>
+      <div className="observation-tour-actions"><button type="button" onClick={()=>onStep(step-1)} disabled={step===0}>{t("上一步")}</button><button type="button" onClick={()=>step===observationTutorialSteps.length-1?onClose():onStep(step+1)}>{step===observationTutorialSteps.length-1?t('开始观星'):t('下一步')}</button></div>
     </div>
   </div>;
 }

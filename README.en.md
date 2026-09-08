@@ -12,7 +12,7 @@
 
 What would the stars look like from a planet elsewhere in the Milky Way?
 
-**[Visit the website](https://nightflight.xelope.fun/en) · [Open the observatory](https://nightflight.xelope.fun/observe) · [中文](README.md)**
+**[Visit the website](https://nightflight.xelope.fun/en) · [Open the observatory](https://nightflight.xelope.fun/observe?lang=en) · [中文](README.md)**
 
 In your browser · Three-dimensional travel · Observed catalogues and models · MIT licensed
 
@@ -38,22 +38,22 @@ Observed data, statistical models and artistic assets are identified separately.
 | --- | --- |
 | **[nightflight.xelope.fun](https://nightflight.xelope.fun/)** | Chinese homepage, the project's default language |
 | [English homepage](https://nightflight.xelope.fun/en) | Introduction and star-flight navigation in English |
-| [Open the observatory](https://nightflight.xelope.fun/observe) | Full-screen sky and observing tools; controls currently use Chinese |
+| [Open the observatory](https://nightflight.xelope.fun/observe?lang=en) | Full-screen sky and observing tools, with an English / 中文 switch |
 | [Alternative address](https://galactic-sky-physics.blush-eel-3740.chatgpt.site/) | The same website at its original hosting address |
 
 The website is publicly accessible. No installation is required.
 
 ## Interface in action
 
-These screenshots show the current application in use. Observatory controls are in Chinese; the instructions below identify the corresponding controls.
+The observatory supports English and Chinese. Switch language at the top right without resetting your viewpoint, position or simulation time. The operation demonstrations below are recorded in the English interface; older atmosphere and nebula screenshots retain their original Chinese labels.
 
-The website’s Getting started section includes recorded demonstrations. Only the visible, selected demo plays, with a still-image option: [Look around](public/guide/look.gif) · [Change position](public/guide/move.gif) · [Find an object](public/guide/inspect.gif).
+The website’s Getting started section includes recorded demonstrations. Only the visible, selected demo plays, with a still-image option: [Look around](public/guide/en/look.gif) · [Change position](public/guide/en/move.gif) · [Find an object](public/guide/en/inspect.gif).
 
 ### Move to another part of the galaxy
 
-Open “位置跳转” at the bottom and choose “内银河” (Inner galaxy). The screenshot shows the completed jump: six presets appear on the right, and the observer coordinates have changed at the lower left. Position controls determine where you are; the left-hand direction buttons determine where you look.
+Open “Position” at the bottom and choose “Inner galaxy”. The screenshot shows the completed jump: six presets appear on the right, and the observer coordinates have changed at the lower left. Position controls determine where you are; the left-hand direction buttons determine where you look.
 
-[![Position jump: Inner galaxy selected, with updated observer coordinates and sky](public/guide/position-jump.jpg)](public/guide/position-jump.jpg)
+[![Position jump: Inner galaxy selected, with updated observer coordinates and sky](public/guide/en/position-jump.jpg)](public/guide/en/position-jump.jpg)
 
 ### Adjust atmosphere and display brightness
 
@@ -63,7 +63,7 @@ Open “观察” and scroll to “显示曝光” (Display exposure) and “行
 
 ### Search for a star and inspect its data
 
-Select “搜索天体” on the left and enter “天狼” to find Sirius. Choosing the result centres the star and opens its measured catalogue information: identifiers, distance, magnitude, estimated temperature and distance from the current observer.
+Select “Search objects” on the left and enter “Sirius”. Choosing the result centres the star and opens its measured catalogue information: identifiers, distance, magnitude, estimated temperature and distance from the current observer.
 
 <table>
   <tr>
@@ -72,7 +72,7 @@ Select “搜索天体” on the left and enter “天狼” to find Sirius. Cho
   </tr>
   <tr>
     <td><a href="docs/images/object-search.jpg"><img src="docs/images/object-search.jpg" width="480" alt="Searching for Sirius by its Chinese name returns its catalogue identity" /></a></td>
-    <td><a href="public/guide/star-details.jpg"><img src="public/guide/star-details.jpg" width="480" alt="Sirius selected with observed catalogue data and current distance in the side panel" /></a></td>
+    <td><a href="public/guide/en/star-details.jpg"><img src="public/guide/en/star-details.jpg" width="480" alt="Sirius selected with observed catalogue data and current distance in the side panel" /></a></td>
   </tr>
 </table>
 
@@ -102,9 +102,9 @@ Scrolling and navigation on the homepage drive a continuous star-flight scene. M
 
 ## Start observing
 
-1. **Open the observatory and follow the guide.** The [observatory](https://nightflight.xelope.fun/observe) offers a seven-step tutorial on first visit. Reopen it with “新手教程” in the bottom toolbar.
-2. **Change position and compare the sky.** Open “位置跳转” and move from the solar neighbourhood to the inner disc or above the plane. Buttons on the left change where you look; the position panel changes where you are.
-3. **Choose your observing conditions.** Open “观察” to adjust visual response, twilight and atmosphere. Start with time paused to compare parallax, then play to explore motion.
+1. **Open the observatory and follow the guide.** The [observatory](https://nightflight.xelope.fun/observe?lang=en) offers a seven-step tutorial on first visit. Reopen it with “Tutorial” in the bottom toolbar.
+2. **Change position and compare the sky.** Open “Position” and move from the solar neighbourhood to the inner disc or above the plane. Buttons on the left change where you look; the position panel changes where you are.
+3. **Choose your observing conditions.** Open “View” to adjust visual response, twilight and atmosphere. Start with time paused to compare parallax, then play to explore motion.
 
 ### Six starting points
 
@@ -246,7 +246,7 @@ Third-party catalogues, photographs and dependencies retain their own licenses. 
 
 <div align="center">
 
-**[Start observing ↗](https://nightflight.xelope.fun/observe)**
+**[Start observing ↗](https://nightflight.xelope.fun/observe?lang=en)**
 
 [中文](README.md) · [English](README.en.md)
 

@@ -17,7 +17,7 @@ const steps = [
     id: 'move', image: '/guide/position-jump.jpg', animation: '/guide/move.gif',
     title: { zh: '移动观察位置', en: 'Move your position' },
     hint: { zh: '选择地点 · 换一片星空', en: 'Choose a place · Find another sky' },
-    body: { zh: '打开「位置跳转」，选择一个地点，或在银河图中自由选点。移动的是观察者，恒星的方向和亮度会随之重新计算。', en: 'Open “位置跳转” to choose a preset or a point on the galactic map. Moving the observer recalculates stellar directions and brightness.' },
+    body: { zh: '打开「位置跳转」，选择一个地点，或在银河图中自由选点。移动的是观察者，恒星的方向和亮度会随之重新计算。', en: 'Open “Position” to choose a preset or a point on the galactic map. Moving the observer recalculates stellar directions and brightness.' },
     alt: { zh: '位置跳转操作截图：已选中内银河，右侧显示六个观察位置', en: 'Position controls with Inner galaxy selected and six observing presets on the right' },
     caption: { zh: '已从太阳邻域跳转至内银河', en: 'After a jump from the solar neighbourhood to the inner galaxy' },
   },
@@ -56,6 +56,7 @@ export function HomeGuide({ language }: { language: HomeLanguage }) {
     return () => observer.disconnect();
   }, []);
   const en = language === 'en';
+  const asset = (path: string) => en ? path.replace('/guide/', '/guide/en/') : path;
   return <div className="nf-guide-demo">
     <div className="nf-guide-tabs" role="tablist" aria-label={en ? 'Choose an operation' : '选择操作'} aria-orientation="vertical">
       {steps.map((step, index) => <button key={step.id} id={`guide-${step.id}`} className="nf-guide-step" type="button" role="tab" aria-selected={selected === index} aria-controls={`guide-panel-${step.id}`} tabIndex={selected === index ? 0 : -1} onClick={() => setSelected(index)} onKeyDown={event => {
@@ -74,8 +75,8 @@ export function HomeGuide({ language }: { language: HomeLanguage }) {
     </div>
     <div className="nf-guide-preview" ref={previewRef}>
       {steps.map((step, index) => <figure key={step.id} id={`guide-panel-${step.id}`} className={`nf-guide-shot ${index === selected ? 'is-active' : ''}`} role="tabpanel" aria-labelledby={`guide-${step.id}`} aria-hidden={index !== selected} inert={index !== selected}>
-        <a className="nf-guide-image-link" href={animate && index === selected ? step.animation : step.image} target="_blank" rel="noreferrer" aria-label={`${step.title[language]} · ${en ? 'View full-size demonstration' : '查看完整操作演示'}`}>
-          <span className="nf-guide-feather"><img src={animate && index === selected ? step.animation : step.image} width="1363" height="936" loading="lazy" decoding="async" alt={step.alt[language]}/></span>
+        <a className="nf-guide-image-link" href={asset(animate && index === selected ? step.animation : step.image)} target="_blank" rel="noreferrer" aria-label={`${step.title[language]} · ${en ? 'View full-size demonstration' : '查看完整操作演示'}`}>
+          <span className="nf-guide-feather"><img src={asset(animate && index === selected ? step.animation : step.image)} width="1363" height="936" loading="lazy" decoding="async" alt={step.alt[language]}/></span>
           <span className="nf-guide-expand" aria-hidden="true">{en ? 'View full size' : '查看大图'} ↗</span>
         </a>
       </figure>)}

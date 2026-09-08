@@ -113,7 +113,10 @@ test("the new introduction and the full-screen observing route remain separate",
   const observingPage = await readFile(new URL("../app/observe/page.tsx", import.meta.url), "utf8");
   const source = await readFile(rendererComponentUrl, "utf8");
   assert.match(page, /night-home/);
-  assert.match(await readFile(new URL("../app/components/night-home.tsx", import.meta.url), "utf8"), /href="\/observe"/);
+  const home = await readFile(new URL("../app/components/night-home.tsx", import.meta.url), "utf8");
+  assert.match(home, /href=\{observeHref\}/);
+  assert.match(home, /'\/observe\?lang=en'/);
+  assert.match(home, /'\/observe'/);
   assert.doesNotMatch(page, /PlanetariumScene/);
   assert.match(observingPage, /PlanetariumScene/);
   assert.doesNotMatch(observingPage, /home-hero/);

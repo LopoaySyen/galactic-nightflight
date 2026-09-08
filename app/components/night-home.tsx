@@ -7,6 +7,7 @@ import { HomeGuide } from './home-guide';
 import { NightHomeEffects } from './night-home-effects';
 
 export function NightHome({ language = 'zh' }: { language?: HomeLanguage }) {
+  const observeHref = language === 'en' ? '/observe?lang=en' : '/observe';
   const en = language === 'en', T = (zh: string, english: string) => en ? english : zh;
   const [active, setActive] = useState(0);
   return <main className={`night-home nf-home ${en ? 'nf-english' : ''}`} lang={en ? 'en' : 'zh-CN'}>
@@ -14,7 +15,7 @@ export function NightHome({ language = 'zh' }: { language?: HomeLanguage }) {
     <header className="nf-header">
       <a href="#about" className="nf-brand"><img src="/brand/logo-starboat.webp" alt="" width="40" height="40"/><span>{T('银河夜航', 'Galactic Nightflight')}</span></a>
       <nav aria-label={T('首页栏目', 'Page sections')}>{homeSections.map((section, index) => <a key={section.id} href={`#${section.id}`} aria-current={active === index ? 'location' : undefined}>{section.label[language]}</a>)}</nav>
-      <div className="nf-header-actions"><a className="nf-language" aria-label={en ? '切换到中文首页' : 'Switch to English'} href={en ? '/' : '/en'} hrefLang={en ? 'zh-CN' : 'en'}>{en ? '中文' : 'English'}</a><a href="/observe" className="nf-enter">{T('开始漫游', 'Explore the sky')}</a></div>
+      <div className="nf-header-actions"><a className="nf-language" aria-label={en ? '切换到中文首页' : 'Switch to English'} href={en ? '/' : '/en'} hrefLang={en ? 'zh-CN' : 'en'}>{en ? '中文' : 'English'}</a><a href={observeHref} className="nf-enter">{T('开始漫游', 'Explore the sky')}</a></div>
     </header>
 
     <section id="about" data-home-section className="nf-chapter nf-intro" aria-labelledby="nf-title">
@@ -22,7 +23,7 @@ export function NightHome({ language = 'zh' }: { language?: HomeLanguage }) {
         <h1 id="nf-title" aria-label={en ? 'Galactic Nightflight' : '银河夜航'}>{en ? <><span className="nf-wordmark-overline">Galactic</span><span className="nf-wordmark-script">Nightflight<span className="nf-wordmark-star" aria-hidden="true">✦</span></span></> : <><span className="nf-wordmark-first">银河</span><span className="nf-wordmark-second">夜航</span></>}</h1>
         <p className="nf-intro-lead"><span>{T('同一片银河，', 'One galaxy.')}</span><strong>{T('不同的星空。', 'Countless skies.')}</strong></p>
         <p className="nf-intro-description"><HomeReading language={language}>{T('如果站在银河另一处的星球上，抬头望见的是怎样的星空？', 'On a world elsewhere in the Milky Way, what would the night sky look like?')}</HomeReading></p>
-        <div className="nf-actions"><a href="/observe" className="nf-primary">{T('开始漫游', 'Start exploring')} <span aria-hidden="true">↗</span></a><a href="#features" className="nf-text-link">{T('看看怎么玩', 'Take a look around')} <span aria-hidden="true">↓</span></a></div>
+        <div className="nf-actions"><a href={observeHref} className="nf-primary">{T('开始漫游', 'Start exploring')} <span aria-hidden="true">↗</span></a><a href="#features" className="nf-text-link">{T('看看怎么玩', 'Take a look around')} <span aria-hidden="true">↓</span></a></div>
       </div>
       <div className="nf-intro-bottom"><p><HomeReading language={language}>{T('从太阳附近出发，去看别处的夜空。', 'Start near the Sun. Find a sky of your own.')}</HomeReading></p><a href="#features">{T('向下滚动', 'Scroll to explore')} <span aria-hidden="true">↓</span></a></div>
     </section>
@@ -35,7 +36,7 @@ export function NightHome({ language = 'zh' }: { language?: HomeLanguage }) {
     <section id="guide" data-home-section className="nf-chapter nf-guide" aria-labelledby="nf-guide-title">
       <div className="nf-guide-heading"><p className="nf-eyebrow"><HomeReading language={language}>{T('使用', 'Getting started')}</HomeReading></p><h2 id="nf-guide-title"><HomeReading language={language}>{T('选一个地方，抬头看看。', 'Pick a place. Look up.')}</HomeReading></h2><p className="nf-body"><HomeReading language={language}>{T('首次进入会有基本操作引导。之后也可以从底部工具栏重新打开「新手教程」。', 'A short guide introduces the controls on your first visit. Reopen it later from the tutorial button in the bottom toolbar.')}</HomeReading></p></div>
       <HomeGuide language={language}/>
-      <a href="/observe" className="nf-text-link">{T('打开观星平台', 'Open the observatory')} <span aria-hidden="true">↗</span></a>
+      <a href={observeHref} className="nf-text-link">{T('打开观星平台', 'Open the observatory')} <span aria-hidden="true">↗</span></a>
     </section>
 
     <section id="open-source" data-home-section className="nf-chapter nf-source" aria-labelledby="nf-source-title">
