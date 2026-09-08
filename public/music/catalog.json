@@ -7,8 +7,8 @@
     "bpm": 60,
     "meter": 4,
     "durationSeconds": 140.0,
-    "src": "/music/01-stellar-tides-variations.mp3",
-    "character": "温暖和声 · 轻轻展开"
+    "src": "/music/01-stellar-tides-reverie.mp3",
+    "character": "温暖琴音 · 星潮舒展"
   },
   {
     "id": "02-golden-orbits",
@@ -18,8 +18,8 @@
     "bpm": 63,
     "meter": 3,
     "durationSeconds": 137.71,
-    "src": "/music/02-golden-orbits-variations.mp3",
-    "character": "温暖和声 · 轻轻展开"
+    "src": "/music/02-golden-orbits-reverie.mp3",
+    "character": "轻缓三拍 · 温柔回旋"
   },
   {
     "id": "03-nebula-lanterns",
@@ -29,8 +29,8 @@
     "bpm": 56,
     "meter": 4,
     "durationSeconds": 149.14,
-    "src": "/music/03-nebula-lanterns-variations.mp3",
-    "character": "温暖和声 · 轻轻展开"
+    "src": "/music/03-nebula-lanterns-reverie.mp3",
+    "character": "疏落灯影 · 低柔和声"
   },
   {
     "id": "04-heart-of-light",
@@ -40,8 +40,8 @@
     "bpm": 66,
     "meter": 4,
     "durationSeconds": 142.91,
-    "src": "/music/04-heart-of-light-variations.mp3",
-    "character": "温暖和声 · 轻轻展开"
+    "src": "/music/04-heart-of-light-reverie.mp3",
+    "character": "暖光渐盛 · 安静回落"
   },
   {
     "id": "05-spiral-letters",
@@ -51,8 +51,8 @@
     "bpm": 52,
     "meter": 4,
     "durationSeconds": 141.23,
-    "src": "/music/05-spiral-letters-variations.mp3",
-    "character": "疏落琴音 · 悠远"
+    "src": "/music/05-spiral-letters-reverie.mp3",
+    "character": "琴句问答 · 远行与回望"
   },
   {
     "id": "06-dust-sails",
@@ -62,8 +62,8 @@
     "bpm": 50,
     "meter": 3,
     "durationSeconds": 141.6,
-    "src": "/music/06-dust-sails-variations.mp3",
-    "character": "疏落琴音 · 悠远"
+    "src": "/music/06-dust-sails-reverie.mp3",
+    "character": "稀疏琴音 · 轻风过帆"
   },
   {
     "id": "07-blue-crossing",
@@ -73,8 +73,8 @@
     "bpm": 54,
     "meter": 4,
     "durationSeconds": 136.44,
-    "src": "/music/07-blue-crossing-variations.mp3",
-    "character": "疏落琴音 · 悠远"
+    "src": "/music/07-blue-crossing-reverie.mp3",
+    "character": "两岸琴音 · 轻声相望"
   },
   {
     "id": "08-small-blue-home",
@@ -84,8 +84,8 @@
     "bpm": 54,
     "meter": 4,
     "durationSeconds": 136.44,
-    "src": "/music/08-small-blue-home-variations.mp3",
-    "character": "柔软琴句 · 生机"
+    "src": "/music/08-small-blue-home-reverie.mp3",
+    "character": "温柔摇曳 · 归家回应"
   },
   {
     "id": "09-leaves-in-starlight",
@@ -95,8 +95,8 @@
     "bpm": 58,
     "meter": 3,
     "durationSeconds": 136.14,
-    "src": "/music/09-leaves-in-starlight-variations.mp3",
-    "character": "柔软琴句 · 生机"
+    "src": "/music/09-leaves-in-starlight-reverie.mp3",
+    "character": "柔软三拍 · 叶间微风"
   },
   {
     "id": "10-breathing-shore",
@@ -106,8 +106,8 @@
     "bpm": 48,
     "meter": 4,
     "durationSeconds": 152.0,
-    "src": "/music/10-breathing-shore-variations.mp3",
-    "character": "柔软琴句 · 生机"
+    "src": "/music/10-breathing-shore-tides.mp3",
+    "character": "柔软琴句 · 潮来潮往"
   },
   {
     "id": "11-distant-snow",
@@ -117,8 +117,8 @@
     "bpm": 44,
     "meter": 4,
     "durationSeconds": 142.91,
-    "src": "/music/11-distant-snow-variations.mp3",
-    "character": "孤远琴音 · 留白"
+    "src": "/music/11-distant-snow-reverie.mp3",
+    "character": "孤远琴音 · 缓缓飘落"
   },
   {
     "id": "12-unanswered-light",
@@ -128,8 +128,8 @@
     "bpm": 42,
     "meter": 4,
     "durationSeconds": 149.14,
-    "src": "/music/12-unanswered-light-variations.mp3",
-    "character": "孤远琴音 · 留白"
+    "src": "/music/12-unanswered-light-reverie.mp3",
+    "character": "未尽琴句 · 更长的安静"
   },
   {
     "id": "13-last-lighthouse",
@@ -139,7 +139,7 @@
     "bpm": 46,
     "meter": 3,
     "durationSeconds": 152.87,
-    "src": "/music/13-last-lighthouse-variations.mp3",
-    "character": "孤远琴音 · 留白"
+    "src": "/music/13-last-lighthouse-reverie.mp3",
+    "character": "远处五度 · 最后的归音"
   }
 ]

@@ -5,12 +5,16 @@ Requires numpy, scipy and ffmpeg. All source samples are bundled locally.
 from pathlib import Path
 from fractions import Fraction
 from functools import lru_cache
+import argparse
 import json
 import subprocess
 import tempfile
 import numpy as np
 from scipy import signal
 from scipy.io import wavfile
+from coastal_soundscape import SHORE_CUES, render_shoreline
+from night_sky_arrangements import ARRANGEMENTS
+from night_sky_soundscapes import render_soundscape
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT/'public/music'
@@ -32,6 +36,8 @@ def vary(notes, variant):
     if variant == 'rising-sequence': degrees = [degree+2 for degree in degrees]
     elif variant == 'inversion': degrees = [2*degrees[0]-degree for degree in degrees]
     elif variant == 'fragment': degrees = degrees[:3]
+    elif variant == 'head': degrees = degrees[:2]
+    elif variant == 'retrograde': degrees = degrees[::-1]
     elif variant == 'answer': degrees = degrees[2:]+degrees[:2]
     result = [scale[degree] for degree in degrees]
     while max(result) > 74: result = [note-12 for note in result]
@@ -80,8 +86,12 @@ def piano_sample(midi, colour):
     sound *= .65/max(.001,float(np.max(np.abs(sound))))
     return sound.astype(np.float32)
 
-def render(index, score):
+def render(index, score, stems=False):
     sid,title,en,zone,bpm,meter,bars,progression,answer,colour = score
+    coastal = sid == '10-breathing-shore'
+    arrangement = ARRANGEMENTS.get(sid)
+    if arrangement:
+        colour = arrangement['colour']
     rng = np.random.default_rng(8200+index*73)
     beat = 60/bpm
     bar = beat*meter
@@ -110,10 +120,52 @@ def render(index, score):
         middle = sound.mean(axis=1,keepdims=True)
         sound = middle*.45+sound*.55
         mix[at:at+count] += sound*level
-        events.append({'time':round(start,3),'midi':midi,'duration':round(count/SR,3),'voice':kind})
+        events.append({'time':round(start,3),'midi':midi,'duration':round(count/SR,3),'voice':kind,'level':round(level,4)})
+
+    if arrangement:
+        phrases = arrangement['phrases']
+        for number, phrase in enumerate(phrases):
+            source = phrase['source']
+            if source == 'M':
+                melody = vary(MOTIF, phrase['variant']); theme = 'shared'
+            elif source == 'R':
+                melody = vary(REGIONAL_MOTIFS[zone], phrase['variant']); theme = 'regional'
+            elif source == 'A':
+                melody = answer[:len(phrase['rhythm'])]; theme = 'piece-answer'
+            else:
+                melody = source; theme = 'piece-coda'
+            melody = [note+phrase['register'] for note in melody]
+            assert len(melody)==len(phrase['rhythm']), (sid, number, melody)
+            start = phrase['start']
+            end = phrases[number+1]['start']-1 if number+1<len(phrases) else length-6
+            # A note can lean into the middle of a sentence, then let its last
+            # syllable fall away. No fixed velocity or repeated beat pattern.
+            contour = [.88,1,.84,.94,.72,.64,.6]
+            for j,(note,offset) in enumerate(zip(melody,phrase['rhythm'])):
+                when = start+offset*beat
+                duration = min(phrase['sustain'],end-when)
+                assert duration>1.4, (sid, number, when, end)
+                level = (.255 if zone=='core' else .235)*phrase['level']*contour[j]*rng.uniform(.93,1)
+                if j==len(melody)-1:
+                    level *= .83
+                add(note,when,duration,level)
+            chord_name = phrase['chord']
+            if chord_name:
+                root, fifth = HARMONIES[chord_name]
+                add(root,start+.9*beat,7.2,.082*phrase['level'])
+                if phrase['voicing']=='open':
+                    add(fifth,start+2.1*beat,6.1,.05*phrase['level'])
+                elif phrase['voicing']=='third':
+                    third = 3 if chord_name in ('B','E','F') else 4
+                    add(root+12+third,start+3.3*beat,5.7,.047*phrase['level'])
+                elif phrase['voicing']=='answer':
+                    add(fifth,start+6.3*beat,5.6,.052*phrase['level'])
+            phrase_notes.append(dict(start=start,theme=theme,variation=phrase['variant'],
+                notes=melody,positions=phrase['rhythm'],harmony=chord_name,
+                accompaniment=phrase['voicing'] if chord_name else 'solo',level=phrase['level']))
 
     phrase_bars = 4 if zone=='core' else 6
-    phrase_starts = list(range(0,bars-2,phrase_bars))
+    phrase_starts = [] if arrangement else list(range(0,bars-2,phrase_bars))
     shared_phrase = min(len(phrase_starts)-2, 2+index%3)
     for phrase,b in enumerate(phrase_starts):
         start = b*bar+2+(index%3)*.6
@@ -140,6 +192,10 @@ def render(index, score):
         if zone=='outer': spacing=[0,3,6,10,13,16,19]
         elif meter==3: spacing=[0,2,4,5.5,8,10,12]
         else: spacing=[0,2,4.5,6.5,9,11,13]
+        if coastal:
+            # Longer breaths within the opening/coda, and a gentler reply in the
+            # middle. Keep the common motif intact; vary its pace and weight.
+            spacing = [0,2.5,5.5,8,11,13,15] if phrase in (0,4) else [0,2.2,4.8,7.4,10.5,13,15]
         phrase_end = min((b+phrase_bars)*bar-1.8,length-9)
         # Stretch the shared theme and displace some entries within the phrase.
         stretch = 1.12 if theme == 'shared' and meter == 4 else 1
@@ -153,55 +209,98 @@ def render(index, score):
             if when>phrase_end-1.5: break
             duration = min(5.5 if zone=='outer' else 4.3,phrase_end-when+1)
             velocity = (.28 if zone=='core' else .25)*arc*rng.uniform(.86,1)
+            if coastal:
+                velocity *= [1,.86,.77,.84,.70][j%5]
             if j==len(melody)-1: velocity*=.78
             add(note,when,duration,velocity)
         # The low hand speaks once per phrase. Some passages remain solo.
         if zone!='outer' or phrase%2==0:
-            add(chord[0],start-.3,7.5,.12*arc)
-            add(chord[1],start+.15,6.8,.075*arc)
+            if coastal:
+                # A single low note supports the first/last phrases; leave the
+                # inverted regional reply unaccompanied before the final return.
+                if phrase != 3:
+                    add(chord[0],start+.9,7,.085*arc)
+                if phrase in (1,2):
+                    add(chord[1],start+1.6,6,.052*arc)
+            else:
+                add(chord[0],start-.3,7.5,.12*arc)
+                add(chord[1],start+.15,6.8,.075*arc)
         if zone=='core' and phrase%2==1:
             add(chord[1]+12,start+7*beat,5,.08)
         # Occasional low breaths; no continuous pad, percussion or rhythmic clock.
         if zone=='core' and phrase in (2,4):
             add(chord[1],start+1,10,.010,'breath')
-        if zone=='solar' and phrase==2:
+        if zone=='solar' and phrase==2 and not coastal:
             add(chord[1]+12,start+1,9,.008,'breath')
 
     # One small, dark diffuse room, without the previous rhythmic echo network.
     dry = mix.copy()
+    wet, decay = arrangement['room'] if arrangement else (.09,.65)
     for channel in range(2):
-        t = np.arange(int(3.2*SR))/SR
-        ir = rng.normal(0,1,len(t))*np.exp(-t/.65)
+        t = np.arange(int((5*decay if arrangement else 3.2)*SR))/SR
+        ir = rng.normal(0,1,len(t))*np.exp(-t/decay)
         ir[:int(.035*SR)] = 0
         ir = signal.sosfilt(signal.butter(2,1600,fs=SR,output='sos'),ir)
-        ir *= .09/np.sqrt(np.sum(ir*ir))
+        ir *= wet/np.sqrt(np.sum(ir*ir))
         mix[:,channel] += signal.fftconvolve(dry[:,channel],ir,mode='full')[:len(mix)]
+    piano = mix.copy() if stems else None
+    shoreline = render_shoreline(len(mix), SR) if coastal else None
+    soundscape = SHORE_CUES if coastal else arrangement['cues']
+    if arrangement:
+        shoreline = render_soundscape(soundscape,len(mix),SR,260908+index*103)
+    if shoreline is not None:
+        mix += shoreline
     time = np.arange(len(mix))/SR
     mix *= (np.minimum(time/3,1)*np.maximum(np.minimum((length-time)/7,1),0))[:,None]
     mix *= .7/max(.001,float(np.max(np.abs(mix))))
-    filename = f'{sid}-variations.mp3'
+    filename = f'{sid}-tides.mp3' if coastal else f'{sid}-reverie.mp3'
+    if stems:
+        review = ROOT/'output/music-review'/sid
+        review.mkdir(parents=True,exist_ok=True)
+        wavfile.write(review/'piano.wav',SR,piano)
+        wavfile.write(review/'ambience.wav',SR,shoreline)
     with tempfile.TemporaryDirectory(prefix='nightflight-quiet-') as temp:
         wav = Path(temp)/'mix.wav'
         wavfile.write(wav,SR,mix)
+        mastering = 'loudnorm=I=-25:TP=-3:LRA=12'
+        if arrangement:
+            # Measure first, then apply one constant gain. Large composed rests
+            # should not make a dynamic normalizer ride up the room or air bed.
+            measured = subprocess.run(['ffmpeg','-hide_banner','-i',str(wav),
+                '-af','loudnorm=I=-25:TP=-3:LRA=20:print_format=json','-f','null','-'],
+                capture_output=True,text=True,encoding='utf-8',check=True)
+            metrics = json.JSONDecoder().raw_decode(measured.stderr[measured.stderr.rfind('{'):])[0]
+            gain = min(-25-float(metrics['input_i']), -3.5-float(metrics['input_tp']))
+            mastering = f'volume={gain:.4f}dB'
         subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-y','-i',str(wav),
-            '-af','loudnorm=I=-25:TP=-3:LRA=12','-ar','44100','-c:a','libmp3lame','-b:a','160k',
-            '-metadata',f'title={title} / {en}','-metadata','album=十三片夜空 · Regional Variations',
-            '-metadata','comment=Original arrangement. Modified Salamander Grand Piano samples by Alexander Holm, CC BY 3.0, https://github.com/Tonejs/audio/tree/master/salamander',
+            '-af',mastering,'-ar','44100','-c:a','libmp3lame','-b:a','160k',
+            '-metadata',f'title={title} / {en}','-metadata','album=十三片夜空 · Regional Variations' if coastal else 'album=十三片夜空 · Quiet Reveries',
+            '-metadata','comment=Original arrangement and synthesized shoreline. Modified Salamander Grand Piano samples by Alexander Holm, CC BY 3.0, https://github.com/Tonejs/audio/tree/master/salamander' if coastal else 'comment=Original arrangement and original sound design. Modified Salamander Grand Piano samples by Alexander Holm, CC BY 3.0, https://github.com/Tonejs/audio/tree/master/salamander',
             '-metadata',f'track={index+1}/13',str(OUT/filename)],check=True)
     score_dir = ROOT/'output/quiet-scores'
     score_dir.mkdir(parents=True,exist_ok=True)
     (score_dir/f'{sid}.json').write_text(json.dumps({'region':zone,'regionalMotif':REGIONAL_MOTIFS[zone],
-        'phrases':phrase_notes,'events':events},indent=2)+'\n',encoding='utf-8')
+        'phrases':phrase_notes,'events':events, 'soundscape':soundscape},indent=2)+'\n',encoding='utf-8')
     return dict(id=sid,title=title,titleEn=en,zone=zone,bpm=bpm,meter=meter,
         durationSeconds=round(length,2),src=f'/music/{filename}',
-        character={'core':'温暖和声 · 轻轻展开','disc':'疏落琴音 · 悠远','solar':'柔软琴句 · 生机','outer':'孤远琴音 · 留白'}[zone])
+        character='柔软琴句 · 潮来潮往' if coastal else arrangement['character'])
 
 if __name__=='__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--track', nargs='+', choices=[score[0] for score in SCORES],
+                        help='Render selected tracks and retain the rest of the catalog.')
+    parser.add_argument('--stems', action='store_true', help='Export piano/ambience stems for mix review.')
+    args = parser.parse_args()
     OUT.mkdir(parents=True,exist_ok=True)
+    catalog_path = OUT/'catalog.json'
+    previous = {entry['id']:entry for entry in json.loads(catalog_path.read_text(encoding='utf-8'))} if args.track else {}
     BANK.update(load_samples())
     manifest=[]
     for i,score in enumerate(SCORES):
-        entry=render(i,score)
+        if args.track and score[0] not in args.track:
+            manifest.append(previous[score[0]])
+            continue
+        entry=render(i,score,args.stems)
         manifest.append(entry)
         print(f'{i+1:02}/13 {entry["id"]} {entry["durationSeconds"]}s',flush=True)
     (OUT/'catalog.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
