@@ -1395,6 +1395,9 @@ canvas:focus-visible {
 .star-detail-heading {display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
 .star-detail-heading h2 {font-size:24px;font-weight:500;margin:2px 0;letter-spacing:.03em;}
 .star-detail-heading span,.star-detail-source {color:#9dadc0;font-size:13px;}
+.star-detail-summary {margin:12px 0;color:#d3dfee;line-height:1.85;}
+.star-detail-aliases {margin:10px 0;font-size:12px;color:#9dadc0;overflow-wrap:anywhere;}
+.scintillation-control {display:flex;align-items:center;gap:10px;margin:14px 0 4px;color:#c9d7e7;font-size:14px;}
 .star-detail-heading button {border:0;background:transparent;color:#c5d4e7;font-size:24px;cursor:pointer;}
 .star-detail dl {margin:18px 0;}
 .star-detail dl>div {display:flex;justify-content:space-between;gap:14px;padding:7px 0;}
@@ -1753,3 +1756,46 @@ body:has(.nf-home) {height:auto;min-height:100vh;overflow:visible;}
 .planetarium-brand>a small {display:block;}
 
 .planetarium-shell[lang="en"] .star-detail dd small {white-space:nowrap;}
+
+/* A quiet, reachable music control also stays available in immersive mode. */
+.observation-music {position:absolute;top:76px;right:24px;z-index:24;color:#d7dfea;font-size:13px;}
+.observation-music button {font:inherit;cursor:pointer;}
+.music-trigger {display:flex;align-items:center;gap:9px;margin-left:auto;border:1px solid rgba(175,195,220,.17);border-radius:22px;padding:9px 13px;background:rgba(9,16,27,.68);color:#aab9cc;backdrop-filter:blur(16px);}
+.music-trigger:hover,.music-trigger[aria-expanded="true"] {color:#e7e9ee;border-color:#b69d70;}
+.music-signal {display:flex;align-items:center;gap:3px;height:13px;}
+.music-signal i {width:2px;height:4px;background:currentColor;border-radius:2px;}
+.music-signal i:nth-child(2) {height:11px;}
+.music-signal i:nth-child(3) {height:7px;}
+.music-trigger.is-playing {color:#c7b18a;}
+.music-panel {width:308px;margin-top:9px;padding:16px 18px;border:1px solid rgba(165,190,220,.2);border-radius:18px;background:rgba(9,15,26,.96);box-shadow:0 16px 65px #0006;backdrop-filter:blur(22px);max-height:calc(100dvh - 160px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#455568 transparent;}
+.music-heading {display:flex;justify-content:space-between;align-items:center;letter-spacing:.18em;color:#bea87f;font-size:11px;}
+.music-heading button {border:0;background:none;color:#9aa7ba;font-size:22px;padding:0 0 0 14px;line-height:1.3;}
+.music-region {font-size:11px;color:#91a0b5;margin:10px 0 16px;}
+.music-now strong {display:block;font-weight:500;font-size:19px;letter-spacing:.045em;line-height:1.5;}
+.music-now small {display:block;margin-top:5px;color:#92a0b4;font-size:11px;}
+.music-transport {display:flex;gap:9px;margin-top:20px;}
+.music-transport button {border:1px solid #67778c55;border-radius:9px;background:#23304655;color:#c2cdde;padding:10px 13px;}
+.music-transport .music-play {flex:1;background:#aa936823;border-color:#b69d7059;color:#ead9b8;}
+.music-transport button:hover {border-color:#cfb780;}
+.music-transport button:disabled {opacity:.5;cursor:wait;}
+.music-volume {display:flex;align-items:center;gap:10px;margin:19px 0 13px;}
+.music-volume button {min-width:43px;border:0;background:none;padding:3px 0;text-align:left;color:#b2bed0;font-size:12px;}
+.music-volume button[aria-pressed="true"] {color:#d2b782;}
+.music-volume input {width:100%;min-width:0;height:16px;accent-color:#bda677;cursor:pointer;}
+.music-volume output {min-width:34px;text-align:right;font-variant-numeric:tabular-nums;color:#b2bed0;font-size:12px;}
+.music-hint,.music-library>p {font-size:11px;line-height:1.8;color:#8e9eb3;}
+.music-error {font-size:12px;line-height:1.6;color:#f2bd99;}
+.music-library {border-top:1px solid #afc5e119;margin-top:17px;padding-top:13px;}
+.music-library summary {display:flex;align-items:center;justify-content:space-between;color:#b1bfd2;cursor:pointer;list-style:none;font-size:12px;padding:4px 0;}
+.music-library summary::-webkit-details-marker {display:none;}
+.music-library[open] summary>span {transform:rotate(45deg);}
+.music-track-list {max-height:244px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#455568 transparent;margin-top:12px;padding-right:4px;}
+.music-group h3 {font-size:10px;color:#91a0b5;font-weight:400;letter-spacing:.12em;margin:15px 0 6px;}
+.music-group:first-child h3 {margin-top:0;}
+.music-group button {width:100%;display:flex;align-items:center;justify-content:space-between;border:0;border-radius:7px;background:transparent;color:#c5cede;padding:9px 7px;font-size:12px;text-align:left;gap:8px;}
+.music-group button>span:first-child {display:flex;align-items:baseline;gap:10px;}
+.music-group button small {color:#718298;font-size:10px;font-variant-numeric:tabular-nums;}
+.music-group button[aria-pressed="true"],.music-group button:hover {background:#baa47216;color:#e0ca9e;}
+.observation-music button:focus-visible,.observation-music input:focus-visible,.observation-music summary:focus-visible {outline:2px solid #d6bd8d;outline-offset:4px;}
+@media(max-width:720px){.observation-music{top:69px;right:12px;}.music-trigger{font-size:11px;padding:7px 10px;}.music-panel{width:min(308px,calc(100vw - 24px));max-height:calc(100dvh - 128px);padding:14px 16px;}}
+@media(max-height:600px) and (min-width:721px){.observation-music{top:66px;}.music-panel{max-height:calc(100dvh - 119px);}}

@@ -8,9 +8,29 @@ import {projectDeepSkyImageSources} from '../lib/rendering/deep-sky-image-catalo
 import {resolveQuickView} from '../lib/rendering/quick-view.ts';
 import {pointSourcePositionAtTime} from '../lib/physics/kinematics.ts';
 import {projectDirectionPerspective} from '../lib/rendering/projection.ts';
+import {starName,starIdentity} from '../lib/rendering/star-identities.ts';
 const observer={x:-8277,y:0,z:0},zenith={x:0,y:0,z:1};
 const catalogue=parseObservedBrightStarCatalog(await readFile(new URL('../public/data/yale-bright-stars.csv',import.meta.url),'utf8'));
 const index=buildSkySearchIndex(catalogue);
+
+test('Polaris traditional names, familiar names and identifiers reach one measured record',()=>{
+  for(const query of ['勾陈一','勾陳一','北极星','Polaris','小熊座α','Alpha Ursae Minoris','HIP 11767','HD 8890']){
+    const result=searchSkyObjects(index,query)[0];
+    assert.equal(result?.id,'hip-11767',query); assert.equal(result.title,'勾陈一');assert.equal(result.titleEn,'Polaris');
+  }
+  const source=catalogue.find(star=>star.id==='hip-11767');
+  assert.equal(source.observedData.henryDraperIdentifier,'8890');
+  assert.ok(source.observedData.referenceDistanceParsec>100);
+  assert.equal(starName(source.displayName,'zh',source.id),'勾陈一');
+});
+test('thousands of existing measured stars acquire searchable Chinese names without duplicate stars',()=>{
+  const enriched=catalogue.filter(source=>starIdentity(source.id));
+  assert.equal(enriched.length,2455);
+  assert.equal(new Set(catalogue.map(source=>source.id)).size,catalogue.length);
+  for(const [query,id] of [['勾陈二','hip-85822'],['天权','hip-59774'],['开阳','hip-65378'],['摇光','hip-67301'],['参宿一','hip-26727']]){
+    assert.equal(searchSkyObjects(index,query)[0]?.id,id,query);
+  }
+});
 
 test('Chinese names, English names and both real catalogue IDs find the same Sirius record',()=>{
   for(const query of ['天狼星','sIrIuS','  HIP 32349  ','ＨＩＰ　３２３４９','依巴谷32349','HD 48915','亨利·德雷珀48915']){

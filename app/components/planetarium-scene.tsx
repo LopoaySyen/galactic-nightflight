@@ -57,6 +57,7 @@ import {
 import { localZenith, localToGalactic } from "@/lib/rendering/local-frame";
 import { createTerrainGpuRenderer, type TerrainGpuRenderer } from "@/lib/rendering/terrain-gpu";
 import { createStarGpuRenderer, type StarGpuRenderer } from "@/lib/rendering/star-gpu";
+import { stellarScintillation, starScintillationPhase } from "@/lib/rendering/stellar-scintillation";
 import { createSkyBackgroundGpuRenderer, type SkyBackgroundGpuRenderer } from "@/lib/rendering/sky-background-gpu";
 import { resolveQuickView } from "@/lib/rendering/quick-view";
 import { useSkyComputation } from "./use-sky-computation";
@@ -73,6 +74,7 @@ import { pointSourcePositionAtTime } from "@/lib/physics/kinematics";
 import {observerPresets,cameraFacingGalacticCentre} from "@/lib/rendering/observer-presets";
 import {observationTutorialSteps,shouldShowObservationTutorial,rememberObservationTutorial} from "@/lib/rendering/observation-tutorial";
 import {ObservationTutorial} from "./observation-tutorial";
+import {ObservationMusic} from "./observation-music";
 
 const MINIMUM_RADIUS_PARSEC = 100;
 const MAXIMUM_RADIUS_PARSEC = 20_000;
@@ -181,6 +183,16 @@ function PlanetariumView() {
   const [isTimePlaying, setIsTimePlaying] = useState(false);
   const [observerFollowsDynamics, setObserverFollowsDynamics] = useState(true);
   const [atmospherePreset, setAtmospherePreset] = useState<AtmospherePreset>("earth-clear");
+  const [scintillationEnabled, setScintillationEnabled] = useState(true);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const scintillationTimeRef = useRef(0);
+  const scintillationActive = scintillationEnabled && !reducedMotion && atmospherePreset !== "space" && scope === "galaxy-prediction";
+  useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => setReducedMotion(preference.matches);
+    sync(); preference.addEventListener('change', sync);
+    return () => preference.removeEventListener('change', sync);
+  }, []);
   const [planetInclinationDegrees, setPlanetInclinationDegrees] = useState(22);
   const [displayExposureStops, setDisplayExposureStops] = useState(0.5);
   const [navigationNotice, setNavigationNotice] = useState("");
@@ -625,7 +637,7 @@ function PlanetariumView() {
     }
     const starsOnGpu = scope === "galaxy-prediction" && !!starsGpu?.render(camera,
       observerPositionParsec, simulationTimeYears, width, height, pixelRatio, atmosphereZenith, atmospherePreset,
-      observationMode, displayExposureStops, sunAltitudeDegrees);
+      observationMode, displayExposureStops, sunAltitudeDegrees, scintillationTimeRef.current, scintillationActive);
     if (starCanvasRef.current) starCanvasRef.current.style.visibility = starsOnGpu ? "visible" : "hidden";
 
     if (scope === "galaxy-prediction" && !backgroundOnGpu) {
@@ -912,6 +924,7 @@ function PlanetariumView() {
       index: number;
       observedMagnitude: number;
       detectorSignal: number;
+      scintillation: number;
       red: number;
       green: number;
       blue: number;
@@ -947,12 +960,14 @@ function PlanetariumView() {
       const [red, green, blue] = displayedLinearRgb.map((channel) =>
         linearChannelToDisplay(whiteMix + (1 - whiteMix) * channel),
       );
-      visibleSources.push({ source, index, observedMagnitude, detectorSignal, red, green, blue });
+      const scintillation = scintillationActive ? stellarScintillation(scintillationTimeRef.current,
+        starScintillationPhase(source.id,index), altitudeDegrees, atmospherePreset, observationMode) : 1;
+      visibleSources.push({ source, index, observedMagnitude, detectorSignal, scintillation, red, green, blue });
     });
 
     for (const visible of visibleSources) {
-      const { source, detectorSignal, red, green, blue } = visible;
-      const coreOpacity = clamp(detectorSignal ** 0.36, 0, 1);
+      const { source, detectorSignal, scintillation, red, green, blue } = visible;
+      const coreOpacity = clamp(detectorSignal ** 0.36 * scintillation, 0, 1);
       const coreSize = Math.max(1, pixelRatio * (0.5 + 0.66 * detectorSignal));
       context.fillStyle = `rgba(${red}, ${green}, ${blue}, ${coreOpacity})`;
       context.beginPath();
@@ -964,12 +979,12 @@ function PlanetariumView() {
       .sort((first, second) => second.detectorSignal - first.detectorSignal)
       .slice(0, 48);
     for (const visible of brightSources) {
-      const { source, detectorSignal, red, green, blue } = visible;
+      const { source, detectorSignal, scintillation, red, green, blue } = visible;
       if (detectorSignal > 0.16) {
         const haloRadius = (2 + 5.5 * detectorSignal ** 0.62) * pixelRatio;
         const halo = context.createRadialGradient(source.canvasX, source.canvasY, 0, source.canvasX, source.canvasY, haloRadius);
-        halo.addColorStop(0, `rgba(${red}, ${green}, ${blue}, ${0.42 * detectorSignal ** 0.72})`);
-        halo.addColorStop(0.24, `rgba(${red}, ${green}, ${blue}, ${0.15 * detectorSignal ** 0.72})`);
+        halo.addColorStop(0, `rgba(${red}, ${green}, ${blue}, ${0.42 * detectorSignal ** 0.72 * scintillation})`);
+        halo.addColorStop(0.24, `rgba(${red}, ${green}, ${blue}, ${0.15 * detectorSignal ** 0.72 * scintillation})`);
         halo.addColorStop(1, `rgba(${red}, ${green}, ${blue}, 0)`);
         context.fillStyle = halo;
         context.fillRect(source.canvasX - haloRadius, source.canvasY - haloRadius, haloRadius * 2, haloRadius * 2);
@@ -1106,7 +1121,7 @@ function PlanetariumView() {
         context.drawImage(projectionCanvas, 0, 0, width, height);
       }
     }
-  }, [atmospherePreset, atmosphereZenith, camera, displayExposureStops, planetInclinationDegrees, simulationTimeYears, skyComputation, skyPoints, deepSkyAssetVersion, drawCurve, enhanceDeepSkyScale, galaxyColourGrade, isSkyDragging, observationMode, observerPositionParsec, planetTerrainAssetVersion, preparedExtragalacticSources, preparedGalaxyPointSources, namedPreparedStars, selectedStar, selectedDeepSky, scope, showBenchmarkLabels, showCoordinateGrid, showDeepSkyImages, showExtragalactic, showGalacticPlane, sunAltitudeDegrees, sunDirection, language, t]);
+  }, [atmospherePreset, atmosphereZenith, camera, displayExposureStops, planetInclinationDegrees, simulationTimeYears, skyComputation, skyPoints, deepSkyAssetVersion, drawCurve, enhanceDeepSkyScale, galaxyColourGrade, isSkyDragging, observationMode, observerPositionParsec, planetTerrainAssetVersion, preparedExtragalacticSources, preparedGalaxyPointSources, namedPreparedStars, selectedStar, selectedDeepSky, scope, showBenchmarkLabels, showDeepSkyImages, showCoordinateGrid, showExtragalactic, showGalacticPlane, sunAltitudeDegrees, sunDirection, language, t, scintillationActive]);
 
   const scheduleDraw = useCallback(() => {
     if (drawRequestRef.current !== null) return;
@@ -1117,6 +1132,30 @@ function PlanetariumView() {
     });
   }, []);
   useEffect(() => { latestDrawRef.current = drawSky; scheduleDraw(); }, [drawSky, scheduleDraw]);
+  useEffect(() => {
+    if (!scintillationActive) return;
+    let frame: number | null = null, lastFrame = 0, lastFallback = 0;
+    const animate = (milliseconds: number) => {
+      if (document.hidden) { frame = null; return; }
+      if (milliseconds-lastFrame >= 1000/30) {
+        lastFrame = milliseconds; scintillationTimeRef.current = milliseconds/1000;
+        // Only the star layer changes: leave dust, terrain and photographs cached.
+        const gpu = starsGpuRef.current;
+        const drawn = starCanvasRef.current?.style.visibility === 'visible' && gpu?.animateAtmosphere(scintillationTimeRef.current);
+        if (!drawn && milliseconds-lastFallback >= 1000/12) { lastFallback = milliseconds; scheduleDraw(); }
+      }
+      frame = requestAnimationFrame(animate);
+    };
+    const visibilityChanged = () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = document.hidden ? null : requestAnimationFrame(animate);
+    };
+    visibilityChanged(); document.addEventListener('visibilitychange', visibilityChanged);
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      document.removeEventListener('visibilitychange', visibilityChanged);
+    };
+  }, [scintillationActive, scheduleDraw]);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1282,7 +1321,7 @@ function PlanetariumView() {
       {selectedStar && <StarDetail source={selectedStar} observer={observerPositionParsec} timeYears={simulationTimeYears}
         onClose={() => setSelectedStarId(null)} onCentre={() => {
           const position = pointSourcePositionAtTime(selectedStar, simulationTimeYears);
-          navigateToDirection({x:position.x-observerPositionParsec.x,y:position.y-observerPositionParsec.y,z:position.z-observerPositionParsec.z}, starName(selectedStar.displayName));
+          navigateToDirection({x:position.x-observerPositionParsec.x,y:position.y-observerPositionParsec.y,z:position.z-observerPositionParsec.z}, starName(selectedStar.displayName,language,selectedStar.id));
         }} />}
 
       <div className="observatory-header-actions"><button className="observatory-language" type="button" onClick={() => { cancelSkyPointer(); toggleLanguage(); }} aria-label={language === "en" ? "切换为中文" : "Switch to English"}>{language === "en" ? "中文" : "English"}</button>
@@ -1290,6 +1329,7 @@ function PlanetariumView() {
         onClick={() => { setMinimalInterface(!minimalInterface); setActivePanel(null);setSearchOpen(false);setSelectedStarId(null);setSelectedDeepSkyId(null); }}>
         {minimalInterface ? t("显示控制") : t("沉浸观察")}
       </button></div>
+      <ObservationMusic position={observerPositionParsec} />
       <div className="compute-status" role="status">{t(renderError) || (computeState === "failed" ? t("背景计算暂不可用，请刷新重试") : computeState === "updating" ? t("正在更新星光与尘埃…") : "")}</div>
       {navigationNotice && <div className="navigation-notice" role="status">{t(navigationNotice)}<button onClick={() => setNavigationNotice("")} type="button" aria-label={t("关闭视角提示")}>×</button></div>}
       <header className="planetarium-topbar">
@@ -1380,6 +1420,8 @@ function PlanetariumView() {
                 <button type="button" className={atmospherePreset === "earth-hazy" ? "is-active" : ""} onClick={() => setAtmospherePreset("earth-hazy")}><strong>{t("轻雾")}</strong><small>{t("较强散射与近地平衰减")}</small></button>
               </div>
               {atmospherePreset !== "space" && <>
+                <label className="scintillation-control"><input type="checkbox" checked={scintillationEnabled} onChange={event=>setScintillationEnabled(event.target.checked)}/><span>{language==='en'?'Atmospheric star twinkling':'大气中的星光闪烁'}</span></label>
+                <p className="control-definition">{reducedMotion ? (language==='en'?'Twinkling is paused to follow your reduced-motion preference.':'已遵循系统的减少动态效果设置，暂停闪烁。') : (language==='en'?'Stars shimmer independently, more noticeably near the horizon. Twinkling continues while galactic time is paused.':'星光各自轻微明暗起伏，靠近地平线时更明显。暂停银河时间后，闪烁仍会继续。')}</p>
                 <label className="planetarium-range"><span><b>{t("行星地平倾角")}</b><output>{planetInclinationDegrees}°</output></span>
                   <input type="range" min="-75" max="75" step="1" value={planetInclinationDegrees} onChange={event => setPlanetInclinationDegrees(Number(event.target.value))} />
                   <small>{t("行星地平面相对银河盘的倾斜角，单位为度，没有优劣之分。它改变哪些天体位于地平线上方；与盘面仰角不同，这里转动行星坐标系，镜头不转动。当前是可控的假想行星环境，不代表地球某个地点。")}</small>

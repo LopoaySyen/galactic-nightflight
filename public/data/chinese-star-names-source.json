@@ -1,0 +1,13 @@
+{
+  "dataset": "Chinese stellar names joined by Hipparcos identifier",
+  "records": 2455,
+  "source": "https://raw.githubusercontent.com/Stellarium/stellarium-skycultures/master/chinese/index.json",
+  "translation": "https://raw.githubusercontent.com/Stellarium/stellarium-skycultures/master/chinese/po/zh_CN.po",
+  "sourceDescription": "https://raw.githubusercontent.com/Stellarium/stellarium-skycultures/master/chinese/description.md",
+  "attribution": "Karrie Berglund; Sun Shuwei; Stellarium contributors and Chinese translators",
+  "license": "CC BY-SA, as specified in the Chinese sky culture description; this derived name table retains those terms.",
+  "changes": "Retained names for existing stars with usable distances; combined native names, translated asterisms and source Roman numerals; added common Polaris aliases.",
+  "retrieved": "2026-09-08",
+  "unmatchedNames": 0,
+  "scope": "Names and cross-identifications only. Physical measurements remain those of the existing Yale/Hipparcos catalogue."
+}

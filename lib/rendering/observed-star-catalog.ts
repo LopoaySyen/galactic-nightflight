@@ -1,6 +1,7 @@
 import type { PointSourceSample } from "./contracts.ts";
 import { integrateVisualExtinctionMagnitude } from "./galaxy-radiance.ts";
 import { circularVelocityAtPosition } from "../physics/kinematics.ts";
+import { starIdentity } from "./star-identities.ts";
 
 const SOLAR_POSITION_PARSEC = { x: -8_277, y: 0, z: 0 } as const;
 
@@ -114,7 +115,7 @@ export function parseObservedBrightStarCatalog(
         ? colourIndexToTemperatureKelvin(blueMinusVisualMagnitude)
         : 5_800,
       role: "observed-bright-star",
-      displayName: displayName || undefined,
+      displayName: displayName || starIdentity(`hip-${hipparcosIdentifier}`)?.en || undefined,
       sourceCatalog: "Yale Bright Star Catalogue with Hipparcos distances",
       observedData: {
         catalog: "yale-hipparcos",

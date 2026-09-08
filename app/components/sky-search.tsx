@@ -4,7 +4,7 @@ import { useObservationLanguage } from './observation-language';
 import {useDeferredValue,useEffect,useMemo,useRef,useState} from 'react';
 import {searchSkyObjects,type SkySearchEntry} from '@/lib/rendering/sky-search';
 export function SkySearch({index,loading,failed,onSelect,onClose}:{index:readonly SkySearchEntry[];loading:boolean;failed:boolean;onSelect:(entry:SkySearchEntry)=>void;onClose:()=>void}){
-  const { t } = useObservationLanguage();
+  const { t, language } = useObservationLanguage();
   const [query,setQuery]=useState(''),[active,setActive]=useState(0);
   const deferredQuery=useDeferredValue(query);
   const results=useMemo(()=>searchSkyObjects(index,deferredQuery),[index,deferredQuery]);
@@ -28,7 +28,7 @@ export function SkySearch({index,loading,failed,onSelect,onClose}:{index:readonl
     <ul id="sky-search-results" ref={listRef} role="listbox" aria-label={t("匹配的天体")} aria-busy={pending}>
       {results.map((entry,i)=><li key={`${entry.kind}-${entry.id}`} role="presentation"><button id={`sky-result-${i}`} type="button" role="option" tabIndex={-1} aria-selected={i===current}
         onMouseDown={event=>event.preventDefault()} onMouseEnter={()=>setActive(i)} onClick={()=>onSelect(entry)}>
-        <span className="sky-result-kind">{entry.kind==='star'?t('恒星'):t(entry.subtitle)}</span><span className="sky-result-name"><strong>{t(entry.title)}</strong><small>{t(entry.subtitle)}</small></span><span className="sky-result-action">{t("定位")}</span>
+        <span className="sky-result-kind">{entry.kind==='star'?t('恒星'):t(entry.subtitle)}</span><span className="sky-result-name"><strong>{language==='en'&&entry.titleEn?entry.titleEn:t(entry.title)}</strong><small>{language==='en'&&entry.subtitleEn?entry.subtitleEn:t(entry.subtitle)}</small></span><span className="sky-result-action">{t("定位")}</span>
       </button></li>)}
     </ul>
     {!results.length&&!pending&&<p className="sky-search-empty">{t("没有找到这个天体。试试完整名称或星表编号；本网站目前只搜索已载入的目录。")}</p>}

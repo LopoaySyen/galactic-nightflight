@@ -4,13 +4,8 @@ import type {PreparedGalaxyPointSource} from './galaxy-star-renderer.ts';
 import {projectPreparedGalaxyPointSources} from './galaxy-star-renderer.ts';
 import {altitudeFromSkyDirection, atmosphericExtinctionMagnitude, daylightVisibilityPenaltyMagnitude, type AtmospherePreset} from './planet-atmosphere.ts';
 
-export const commonStarNames: Record<string,string> = {
-  'Rigil Kentaurus':'南门二 A',Toliman:'南门二 B',Procyon:'南河三',Polaris:'北极星',
-  Sirius:'天狼星',Canopus:'老人星',Arcturus:'大角星',Vega:'织女星',Capella:'五车二',
-  Rigel:'参宿七',Betelgeuse:'参宿四',Altair:'牛郎星',Aldebaran:'毕宿五',Antares:'心宿二',
-  Spica:'角宿一',Pollux:'北河三',Fomalhaut:'北落师门',Deneb:'天津四',Regulus:'轩辕十四',
-};
-export const starName=(name?:string,language:'zh'|'en'='zh')=>name ? (language==='en'?name:commonStarNames[name]??name) : (language==='en'?'Observed star':'实测恒星');
+import { starName } from './star-identities.ts';
+export { starName, commonStarNames } from './star-identities.ts';
 export function observedStarMagnitude(source:ProjectedPointSource,zenith:Vector3,atmosphere:AtmospherePreset,mode:ObservationMode,sunAltitude:number):number {
   if(!source.skyDirection)return Infinity;
   return source.apparentVisualMagnitude+atmosphericExtinctionMagnitude(altitudeFromSkyDirection(source.skyDirection,zenith),atmosphere,mode)
@@ -50,7 +45,7 @@ export function drawObservedStarLabels(context:CanvasRenderingContext2D,sources:
     context.fillStyle='rgba(221,231,245,0.88)';context.shadowColor='#010309';context.shadowBlur=4*pixelRatio;
     for(const {source} of visible){
       if(occupied.length>=24)break;
-      const label=starName(source.displayName,language);const textWidth=context.measureText(label).width;
+      const label=starName(source.displayName,language,source.id);const textWidth=context.measureText(label).width;
       const x=Math.min(width-textWidth-8*pixelRatio,source.canvasX+10*pixelRatio),y=source.canvasY-12*pixelRatio;
       const box={x:x-4*pixelRatio,y:y-10*pixelRatio,width:textWidth+8*pixelRatio,height:22*pixelRatio};
       if(box.x<0||box.y<0||box.y+box.height>height||occupied.some(other=>box.x<other.x+other.width&&box.x+box.width>other.x&&box.y<other.y+other.height&&box.y+box.height>other.y))continue;

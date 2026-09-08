@@ -1,0 +1,145 @@
+[
+  {
+    "id": "01-stellar-tides",
+    "title": "万星潮汐",
+    "titleEn": "Stellar Tides",
+    "zone": "core",
+    "bpm": 60,
+    "meter": 4,
+    "durationSeconds": 140.0,
+    "src": "/music/01-stellar-tides-variations.mp3",
+    "character": "温暖和声 · 轻轻展开"
+  },
+  {
+    "id": "02-golden-orbits",
+    "title": "金色公转",
+    "titleEn": "Golden Orbits",
+    "zone": "core",
+    "bpm": 63,
+    "meter": 3,
+    "durationSeconds": 137.71,
+    "src": "/music/02-golden-orbits-variations.mp3",
+    "character": "温暖和声 · 轻轻展开"
+  },
+  {
+    "id": "03-nebula-lanterns",
+    "title": "星云灯海",
+    "titleEn": "Nebula Lanterns",
+    "zone": "core",
+    "bpm": 56,
+    "meter": 4,
+    "durationSeconds": 149.14,
+    "src": "/music/03-nebula-lanterns-variations.mp3",
+    "character": "温暖和声 · 轻轻展开"
+  },
+  {
+    "id": "04-heart-of-light",
+    "title": "光的心室",
+    "titleEn": "Heart of Light",
+    "zone": "core",
+    "bpm": 66,
+    "meter": 4,
+    "durationSeconds": 142.91,
+    "src": "/music/04-heart-of-light-variations.mp3",
+    "character": "温暖和声 · 轻轻展开"
+  },
+  {
+    "id": "05-spiral-letters",
+    "title": "旋臂来信",
+    "titleEn": "Letters from the Spiral",
+    "zone": "disc",
+    "bpm": 52,
+    "meter": 4,
+    "durationSeconds": 141.23,
+    "src": "/music/05-spiral-letters-variations.mp3",
+    "character": "疏落琴音 · 悠远"
+  },
+  {
+    "id": "06-dust-sails",
+    "title": "尘埃之帆",
+    "titleEn": "Sails of Dust",
+    "zone": "disc",
+    "bpm": 50,
+    "meter": 3,
+    "durationSeconds": 141.6,
+    "src": "/music/06-dust-sails-variations.mp3",
+    "character": "疏落琴音 · 悠远"
+  },
+  {
+    "id": "07-blue-crossing",
+    "title": "蓝色渡口",
+    "titleEn": "Blue Crossing",
+    "zone": "disc",
+    "bpm": 54,
+    "meter": 4,
+    "durationSeconds": 136.44,
+    "src": "/music/07-blue-crossing-variations.mp3",
+    "character": "疏落琴音 · 悠远"
+  },
+  {
+    "id": "08-small-blue-home",
+    "title": "小小蓝色家园",
+    "titleEn": "Small Blue Home",
+    "zone": "solar",
+    "bpm": 54,
+    "meter": 4,
+    "durationSeconds": 136.44,
+    "src": "/music/08-small-blue-home-variations.mp3",
+    "character": "柔软琴句 · 生机"
+  },
+  {
+    "id": "09-leaves-in-starlight",
+    "title": "星光下的叶脉",
+    "titleEn": "Leaves in Starlight",
+    "zone": "solar",
+    "bpm": 58,
+    "meter": 3,
+    "durationSeconds": 136.14,
+    "src": "/music/09-leaves-in-starlight-variations.mp3",
+    "character": "柔软琴句 · 生机"
+  },
+  {
+    "id": "10-breathing-shore",
+    "title": "呼吸的海岸",
+    "titleEn": "A Breathing Shore",
+    "zone": "solar",
+    "bpm": 48,
+    "meter": 4,
+    "durationSeconds": 152.0,
+    "src": "/music/10-breathing-shore-variations.mp3",
+    "character": "柔软琴句 · 生机"
+  },
+  {
+    "id": "11-distant-snow",
+    "title": "远日之雪",
+    "titleEn": "Snow Beyond the Sun",
+    "zone": "outer",
+    "bpm": 44,
+    "meter": 4,
+    "durationSeconds": 142.91,
+    "src": "/music/11-distant-snow-variations.mp3",
+    "character": "孤远琴音 · 留白"
+  },
+  {
+    "id": "12-unanswered-light",
+    "title": "无人应答的光",
+    "titleEn": "Unanswered Light",
+    "zone": "outer",
+    "bpm": 42,
+    "meter": 4,
+    "durationSeconds": 149.14,
+    "src": "/music/12-unanswered-light-variations.mp3",
+    "character": "孤远琴音 · 留白"
+  },
+  {
+    "id": "13-last-lighthouse",
+    "title": "最后一座灯塔",
+    "titleEn": "The Last Lighthouse",
+    "zone": "outer",
+    "bpm": 46,
+    "meter": 3,
+    "durationSeconds": 152.87,
+    "src": "/music/13-last-lighthouse-variations.mp3",
+    "character": "孤远琴音 · 留白"
+  }
+]

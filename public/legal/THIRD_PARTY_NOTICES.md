@@ -44,3 +44,15 @@
 
 - 首页主题使用原有观测照片的高分辨率发布版本：`public/brand/theme-orion.webp` 来自 https://cdn.eso.org/images/publicationjpg/eso1723a.jpg ；`theme-andromeda.webp` 来自 https://cdn.esahubble.org/archives/images/publicationjpg/heic1502b.jpg 。署名与许可同上面的猎户座、仙女座条目。只转换格式，网页另行进行裁切、压暗与主题过渡。
 - 标签页图标是在已选星舟标志基础上通过图像生成重新适配，采用浅蓝底、加粗深蓝图形，并提供多个小尺寸版本。提示词见 `public/brand/favicon-generation-prompt.txt`。
+
+## 静谧钢琴配乐音色 / Quiet piano soundtrack samples
+
+The original Nightflight arrangements use modified Salamander Grand Piano samples (Yamaha C5), recorded by Alexander Holm and distributed by Tone.js under CC BY 3.0.
+Source and attribution: https://github.com/Tonejs/audio/tree/master/salamander
+License: https://creativecommons.org/licenses/by/3.0/
+Modifications: resampling, softened attacks, low-pass filtering, release envelopes, stereo narrowing and reverb. See public/music/CREDITS.md. No Minecraft or C418 recordings or melodies are incorporated.
+
+
+## Chinese stellar names
+
+The derived table `public/data/chinese-star-names.json` joins 2,455 existing Hipparcos catalogue entries to Stellarium's Chinese sky culture. Attribution: Karrie Berglund, Sun Shuwei, Stellarium contributors and Chinese translators. Source: https://github.com/Stellarium/stellarium-skycultures/tree/master/chinese . Text/data retain the upstream **CC BY-SA** terms stated in that culture's `description.md`; they are separate from the MIT application code. Changes: selected existing stars with usable distances, translated source asterism labels and numeric suffixes, combined aliases, and added common Polaris names. Full provenance: `/data/chinese-star-names-source.json`.
