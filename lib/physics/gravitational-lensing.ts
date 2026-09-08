@@ -1,3 +1,4 @@
+import {relativisticPointImages,relativisticPointGlsl} from './schwarzschild.ts';
 import type { Vector3 } from './vector.ts';
 import { normalizeVector, dotProduct } from './vector.ts';
 
@@ -18,6 +19,8 @@ export function einsteinAngleRadians(massSolar: number, lensDistance: number, so
 /** Thin point-mass lens, finite source distance. Second image has negative parity. */
 export function lensedPointImages(direction: Vector3, sourceDistance: number, lens: LensView | null) {
   if (!lens || sourceDistance<=lens.distance) return [{direction,magnification:1}];
+  const radius=2/lens.strength;
+  if(lens.distance<1&&radius>=65&&radius<=1e6)return relativisticPointImages(direction,lens.direction,radius);
   const cosine=dotProduct(direction,lens.direction), strength=lens.strength*(1-lens.distance/sourceDistance);
   if (cosine<=0) return [{direction,magnification:1}];
   const offset={x:direction.x/cosine-lens.direction.x,y:direction.y/cosine-lens.direction.y,z:direction.z/cosine-lens.direction.z};
@@ -46,10 +49,13 @@ export function lensedBackgroundDirection(direction: Vector3, lens: LensView | n
   return normalizeVector({x:lens.direction.x+offset.x*scale,y:lens.direction.y+offset.y*scale,z:lens.direction.z+offset.z*scale});
 }
 export const pointLensGlsl = `
+${relativisticPointGlsl}
 uniform vec3 lensDirection;
 uniform float lensDistance,lensStrength,lensShadow,secondaryImage;
 bool applyPointLens(inout vec3 direction,float sourceDistance,inout float magnitude){
   if(lensStrength<=0.0||sourceDistance<=lensDistance)return secondaryImage<0.5;
+  if(relativisticRadius>0.0)return applyRelativisticLens(direction,magnitude,lensDirection,secondaryImage);
+  if(secondaryImage>1.5)return false;
   float cosine=dot(direction,lensDirection);
   if(cosine<=0.0)return secondaryImage<0.5;
   vec3 offset=direction/cosine-lensDirection;

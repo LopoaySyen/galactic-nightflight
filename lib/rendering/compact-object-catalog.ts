@@ -34,3 +34,11 @@ export const compactObjects: readonly CompactObject[] = [
     imagePath: '/deep-sky/m87-eht.jpg', imageCredit: 'EHT Collaboration · 1.3 mm radio observation' },
 ];
 export const compactObjectsById = new Map(compactObjects.map(object => [object.id, object]));
+/** Galactic diffuse light is smooth over sub-parsec close-up moves, but a black
+ * hole's angular geometry is not. Keep the live camera origin in that case. */
+export function compactViewObserver(observer:Vector3,background:Vector3|undefined) {
+  if(!background)return observer;
+  const shift=Math.hypot(observer.x-background.x,observer.y-background.y,observer.z-background.z);
+  const near=compactObjects.some(object=>Math.hypot(object.positionParsec.x-observer.x,object.positionParsec.y-observer.y,object.positionParsec.z-observer.z)<1);
+  return near&&shift<1?observer:background;
+}

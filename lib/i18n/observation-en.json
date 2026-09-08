@@ -378,5 +378,9 @@
   "涡状星系 M51": "Whirlpool Galaxy M51",
   "正面朝向我们的旋涡星系，与伴星系 NGC 5195 相互作用。哈勃照片中可见沿旋臂分布的年轻恒星与暗尘埃带。": "A face-on spiral interacting with NGC 5195. Hubble resolves young stars and dark dust lanes along its spiral arms.",
   "熔融环 · 引力透镜": "Molten Ring · Gravitational Lens",
-  "这是哈勃拍到的真实引力透镜：前景星系团使后方星系的光线偏折，形成近似爱因斯坦环。照片已包含透镜效应；远距离只用于天空投影，不表示欧氏空间中的航行距离。": "A real Hubble gravitational lens: a foreground galaxy cluster bends a background galaxy into an almost complete Einstein ring. The photograph already contains lensing; the adopted angular-diameter distance is for projection, not Euclidean travel."
+  "这是哈勃拍到的真实引力透镜：前景星系团使后方星系的光线偏折，形成近似爱因斯坦环。照片已包含透镜效应；远距离只用于天空投影，不表示欧氏空间中的航行距离。": "A real Hubble gravitational lens: a foreground galaxy cluster bends a background galaxy into an almost complete Einstein ring. The photograph already contains lensing; the adopted angular-diameter distance is for projection, not Euclidean travel.",
+  "返回盘面": "Return to disc",
+  "返回出发点": "Return to departure",
+  "已返回出发位置，并恢复原来的视角和曝光。时间已暂停。": "Returned to the departure position and restored the view and exposure. Time is paused.",
+  "史瓦西光线追踪 · 物理薄盘 · 已降低相机曝光，时间暂停。": "Schwarzschild ray tracing · physical thin disc · reduced camera exposure. Time paused."
 }

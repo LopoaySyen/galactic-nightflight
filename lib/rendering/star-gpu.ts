@@ -1,3 +1,4 @@
+import {schwarzschildRayTable,type SchwarzschildRayTable} from '../physics/schwarzschild.ts';
 import { pointLensGlsl, type LensView } from '../physics/gravitational-lensing.ts';
 import type { ObservationMode, ViewCamera } from "./contracts.ts";
 import type { Vector3 } from "../physics/vector.ts";
@@ -86,9 +87,15 @@ export function createStarGpuRenderer(canvas: HTMLCanvasElement): StarGpuRendere
   const buffer=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
   for(const [name,size,offset] of [["position",3,0],["velocity",3,12],["magnitude",1,24],["colour",3,28],["phase",1,40]] as const){
     const attribute=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(attribute);gl.vertexAttribPointer(attribute,size,gl.FLOAT,false,44,offset);}
-  const uniforms=Object.fromEntries(["lensDirection","lensDistance","lensStrength","lensShadow","secondaryImage","observerOffset","forward","cameraRight","cameraUp","zenith","tangentFov","elapsedYears","atmosphere","mode","exposure","daylightPenalty","pixelRatio","scintillationTime","scintillationEnabled"].map(name=>[name,gl.getUniformLocation(program,name)]));
-  let count=0, epoch=0, lensStrength=0;
-  const drawPoints=()=>{gl.uniform1f(uniforms.secondaryImage,0);gl.drawArrays(gl.POINTS,0,count);if(lensStrength>1e-12){gl.uniform1f(uniforms.secondaryImage,1);gl.drawArrays(gl.POINTS,0,count);}};
+  const uniforms=Object.fromEntries(["rayOrbits","rayInverse","relativisticRadius","lensDirection","lensDistance","lensStrength","lensShadow","secondaryImage","observerOffset","forward","cameraRight","cameraUp","zenith","tangentFov","elapsedYears","atmosphere","mode","exposure","daylightPenalty","pixelRatio","scintillationTime","scintillationEnabled"].map(name=>[name,gl.getUniformLocation(program,name)]));
+  let count=0, epoch=0, lensStrength=0, relativistic=false;
+  let lastTable:SchwarzschildRayTable|undefined;
+  const rayTextures=[0,1].map(unit=>{const texture=gl.createTexture()!;gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));return texture;});
+  gl.uniform1i(uniforms.rayOrbits,0);gl.uniform1i(uniforms.rayInverse,1);
+  const drawPoints=()=>{gl.uniform1f(uniforms.secondaryImage,0);gl.drawArrays(gl.POINTS,0,count);if(lensStrength>1e-12){gl.uniform1f(uniforms.secondaryImage,1);gl.drawArrays(gl.POINTS,0,count);}if(relativistic){gl.uniform1f(uniforms.secondaryImage,2);gl.drawArrays(gl.POINTS,0,count);}};
   let origin={x:0,y:0,z:0};
   gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);gl.clearColor(0,0,0,0);
   return {
@@ -110,6 +117,12 @@ export function createStarGpuRenderer(canvas: HTMLCanvasElement): StarGpuRendere
       if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
       gl.viewport(0,0,width,height);gl.useProgram(program);gl.clear(gl.COLOR_BUFFER_BIT);
       lensStrength=lens?.strength??0;
+      const radius=lensStrength>0?2/lensStrength:Infinity;
+      relativistic=!!lens&&lens.distance<1&&radius>=65&&radius<=1e6;
+      if(relativistic){const table=schwarzschildRayTable(radius);
+        if(lastTable!==table){for(const [unit,data,height] of [[0,table.pixels,512],[1,table.inverse,1]] as const){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,rayTextures[unit]);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1024,height,0,gl.RGBA,gl.UNSIGNED_BYTE,data);}lastTable=table;}
+      }
+      gl.uniform1f(uniforms.relativisticRadius,relativistic?lastTable!.observerRadius:0);
       gl.uniform3f(uniforms.lensDirection,lens?.direction.x??0,lens?.direction.y??0,lens?.direction.z??1);
       gl.uniform1f(uniforms.lensDistance,lens?.distance??0);gl.uniform1f(uniforms.lensStrength,lensStrength);gl.uniform1f(uniforms.lensShadow,lens?.shadowAngle??0);
       const basis=createCameraBasis(camera);
@@ -129,6 +142,6 @@ export function createStarGpuRenderer(canvas: HTMLCanvasElement): StarGpuRendere
       gl.useProgram(program);gl.uniform1f(uniforms.scintillationTime,seconds);
       gl.clear(gl.COLOR_BUFFER_BIT);drawPoints();return true;
     },
-    dispose(){gl.deleteBuffer(buffer);gl.deleteProgram(program);},
+    dispose(){for(const texture of rayTextures)gl.deleteTexture(texture);gl.deleteBuffer(buffer);gl.deleteProgram(program);},
   };
 }
