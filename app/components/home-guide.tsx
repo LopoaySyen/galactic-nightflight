@@ -74,7 +74,7 @@ export function HomeGuide({ language }: { language: HomeLanguage }) {
     <div className="nf-guide-preview" ref={previewRef}>
       {steps.map((step, index) => <figure key={step.id} id={`guide-panel-${step.id}`} className={`nf-guide-shot ${index === selected ? 'is-active' : ''}`} role="tabpanel" aria-labelledby={`guide-${step.id}`} aria-hidden={index !== selected} inert={index !== selected}>
         <a className="nf-guide-image-link" href={animate && index === selected ? step.animation : step.image} target="_blank" rel="noreferrer" aria-label={`${step.title[language]} · ${en ? 'View full-size demonstration' : '查看完整操作演示'}`}>
-          <img src={animate && index === selected ? step.animation : step.image} width="1363" height="936" loading="lazy" decoding="async" alt={step.alt[language]}/>
+          <span className="nf-guide-feather"><img src={animate && index === selected ? step.animation : step.image} width="1363" height="936" loading="lazy" decoding="async" alt={step.alt[language]}/></span>
           <span className="nf-guide-expand" aria-hidden="true">{en ? 'View full size' : '查看大图'} ↗</span>
         </a>
       </figure>)}
