@@ -46,7 +46,8 @@ a {
   position: fixed;
   inset: 0;
   isolation: isolate;
-  overflow: hidden;
+  /* Offscreen panel transitions must not scroll the fixed sky when focus moves. */
+  overflow: clip;
   background: var(--night);
 }
 
@@ -1816,3 +1817,5 @@ body:has(.nf-home) {height:auto;min-height:100vh;overflow:visible;}
 .black-hole-views button {flex:1;}
 
 .black-hole-views [aria-pressed="true"] {background:#233345;border-color:#8199ae;color:#eef6ff;}
+.black-hole-model {margin-top:18px;border-top:1px solid #24303c;padding-top:14px;}
+.black-hole-model summary {cursor:pointer;color:#aebfcd;font-size:12px;}

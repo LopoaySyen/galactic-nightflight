@@ -3,6 +3,25 @@ import assert from 'node:assert/strict';
 import {traceNullOrbit,stepNullOrbit,PHOTON_CAPTURE_IMPACT,schwarzschildRayTable,sampleOrbitRadius,thinDiscFlux,thinDiscTemperature,discFrequencyShift,SCHWARZSCHILD_EFFICIENCY,blackHoleCameraExposure,rayIntersectsDisc} from '../lib/physics/schwarzschild.ts';
 import {planckSpectralRadiance} from '../lib/rendering/spectrum.ts';
 import {compactObjects,compactViewObserver} from '../lib/rendering/compact-object-catalog.ts';
+import {discDisplayOpacity,rayDiscTransmission,relativisticPointImages} from '../lib/physics/schwarzschild.ts';
+
+test('artistic outer edge transmits starlight continuously while the physical disc stays opaque',()=>{
+  const table=schwarzschildRayTable(180),radial={x:0,y:0,z:1},axis={x:1,y:0,z:0};
+  assert.equal(discDisplayOpacity(22,true),1);
+  assert.equal(discDisplayOpacity(40,true),0);
+  let previous=1;
+  for(let r=22;r<=40;r+=.25){const opacity=discDisplayOpacity(r,true);assert.ok(opacity<=previous);previous=opacity;}
+  assert.ok(discDisplayOpacity(39.99,true)<1e-6);
+  assert.equal(rayDiscTransmission(table,30,radial,axis),0);
+  const softTransmission=rayDiscTransmission(table,30,radial,axis,true);
+  assert.ok(softTransmission>0&&softTransmission<1);
+  assert.equal(rayDiscTransmission(table,6,radial,axis,true),0);
+  const phi=traceNullOrbit(30,180,Math.PI).phi,beta=Math.PI-phi;
+  const direction={x:Math.sin(beta),y:0,z:-Math.cos(beta)},toHole={x:0,y:0,z:-1};
+  const physical=relativisticPointImages(direction,toHole,180),artistic=relativisticPointImages(direction,toHole,180,true);
+  assert.ok(artistic.length>physical.length);
+  for(const image of artistic)assert.ok(Math.acos(-image.direction.z)>Math.asin(PHOTON_CAPTURE_IMPACT*Math.sqrt(1-1/180)/180)*.999);
+});
 
 test('close-up moves use the live origin while long galactic jumps await a matching sky',()=>{
   const hole=compactObjects.find(object=>object.id==='cygnus-x1').positionParsec;

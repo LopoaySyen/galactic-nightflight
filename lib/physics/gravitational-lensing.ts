@@ -4,7 +4,7 @@ import { normalizeVector, dotProduct } from './vector.ts';
 
 export const SCHWARZSCHILD_PARSEC_PER_SOLAR_MASS = 9.57083e-14;
 export interface PointLens { positionParsec: Vector3; massSolar: number }
-export interface LensView { direction: Vector3; distance: number; strength: number; shadowAngle: number }
+export interface LensView { direction: Vector3; distance: number; strength: number; shadowAngle: number; discEdgeFade?: boolean }
 export function lensView(lens: PointLens, observer: Vector3): LensView | null {
   const offset = { x: lens.positionParsec.x-observer.x, y: lens.positionParsec.y-observer.y, z: lens.positionParsec.z-observer.z };
   const distance = Math.hypot(offset.x,offset.y,offset.z);
@@ -20,7 +20,7 @@ export function einsteinAngleRadians(massSolar: number, lensDistance: number, so
 export function lensedPointImages(direction: Vector3, sourceDistance: number, lens: LensView | null) {
   if (!lens || sourceDistance<=lens.distance) return [{direction,magnification:1}];
   const radius=2/lens.strength;
-  if(lens.distance<1&&radius>=65&&radius<=1e6)return relativisticPointImages(direction,lens.direction,radius);
+  if(lens.distance<1&&radius>=65&&radius<=1e6)return relativisticPointImages(direction,lens.direction,radius,lens.discEdgeFade);
   const cosine=dotProduct(direction,lens.direction), strength=lens.strength*(1-lens.distance/sourceDistance);
   if (cosine<=0) return [{direction,magnification:1}];
   const offset={x:direction.x/cosine-lens.direction.x,y:direction.y/cosine-lens.direction.y,z:direction.z/cosine-lens.direction.z};

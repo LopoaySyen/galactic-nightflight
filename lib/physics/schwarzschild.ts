@@ -4,6 +4,14 @@ import { planckSpectralRadiance } from '../rendering/spectrum.ts';
 export const PHOTON_CAPTURE_IMPACT = Math.sqrt(27) / 2;
 export const DISC_INNER_RADIUS = 3;
 export const DISC_OUTER_RADIUS = 40;
+export const DISC_FADE_START = 22;
+/** Display-only opacity taper. The physical thin-disc solution stays opaque. */
+export function discDisplayOpacity(radius:number,softEdge=false) {
+  if(radius<=DISC_INNER_RADIUS||radius>=DISC_OUTER_RADIUS)return 0;
+  if(!softEdge)return 1;
+  const t=Math.max(0,Math.min(1,(radius-DISC_FADE_START)/(DISC_OUTER_RADIUS-DISC_FADE_START)));
+  return 1-t*t*(3-2*t);
+}
 export const RAY_MAX_IMPACT = 64;
 export const RAY_MAX_PHI = 3 * Math.PI;
 export const RAY_WIDTH = 1024;
@@ -130,7 +138,12 @@ export function thermalSpectrumTexture() {
 export const schwarzschildLookupGlsl=`
 uniform sampler2D rayOrbits,rayInverse;
 uniform float relativisticRadius;
+uniform float discEdgeFade;
 const float captureImpact=2.598076211353316;
+float discOpacity(float r){
+  if(r<=3.0||r>=40.0)return 0.0;
+  return discEdgeFade>.5?1.0-smoothstep(22.0,40.0,r):1.0;
+}
 float unpack16(vec4 v){return (v.r*256.0+v.g)/257.0;}
 float orbitColumn(float b){
   if(b<captureImpact)return b/captureImpact*256.0;
@@ -158,14 +171,18 @@ export function sampleInverseImpact(table:SchwarzschildRayTable,phi:number) {
   return RAY_MAX_IMPACT*(unpackPixel(table.inverse,i*4)*(1-f)+unpackPixel(table.inverse,Math.min(i+1,1023)*4)*f);
 }
 export function rayIntersectsDisc(table:SchwarzschildRayTable,b:number,radial:Vector3,axis:Vector3) {
+  return rayDiscTransmission(table,b,radial,axis)===0;
+}
+export function rayDiscTransmission(table:SchwarzschildRayTable,b:number,radial:Vector3,axis:Vector3,softEdge=false) {
   let phi=Math.atan2(-radial.z,axis.z);if(phi<=0)phi+=Math.PI;
+  let transmission=1;
   for(let crossing=0;crossing<3;crossing++){
     const radius=sampleOrbitRadius(table,b,phi+crossing*Math.PI);
-    if(radius>3&&radius<40)return true;
+    transmission*=1-discDisplayOpacity(radius,softEdge);
   }
-  return false;
+  return transmission;
 }
-export function relativisticPointImages(direction:Vector3,toHole:Vector3,observerRadius:number) {
+export function relativisticPointImages(direction:Vector3,toHole:Vector3,observerRadius:number,softEdge=false) {
   const table=schwarzschildRayTable(observerRadius),cosine=dotProduct(direction,toHole);
   const beta=Math.acos(Math.min(1,Math.max(-1,cosine)));
   const axis=normalizeVector(beta>1e-8?{x:direction.x-cosine*toHole.x,y:direction.y-cosine*toHole.y,z:direction.z-cosine*toHole.z}:Math.abs(toHole.z)<.9?{x:-toHole.y,y:toHole.x,z:0}:{x:1,y:0,z:0});
@@ -176,11 +193,12 @@ export function relativisticPointImages(direction:Vector3,toHole:Vector3,observe
     if(phi<table.escape[1023]||phi>RAY_MAX_PHI){if(order===0)results.push({direction,magnification:1});continue;}
     const b=sampleInverseImpact(table,phi),scaled=b*Math.sqrt(1-1/table.observerRadius)/table.observerRadius;
     const signedAxis={x:axis.x*sign,y:axis.y*sign,z:axis.z*sign};
-    if(rayIntersectsDisc(table,b,radial,signedAxis))continue;
+    const transmission=rayDiscTransmission(table,b,radial,signedAxis,softEdge);
+    if(transmission<=0)continue;
     const theta=Math.asin(Math.min(1,scaled)),h=RAY_MAX_PHI/1023;
     const derivative=Math.abs(sampleInverseImpact(table,Math.min(RAY_MAX_PHI,phi+h))-sampleInverseImpact(table,Math.max(0,phi-h)))/(2*h);
     const mu=Math.sin(theta)/Math.max(Math.sin(beta),1e-5)*Math.sqrt(1-1/table.observerRadius)/table.observerRadius/Math.cos(theta)*derivative;
-    results.push({direction:normalizeVector({x:toHole.x*Math.cos(theta)+signedAxis.x*Math.sin(theta),y:toHole.y*Math.cos(theta)+signedAxis.y*Math.sin(theta),z:toHole.z*Math.cos(theta)+signedAxis.z*Math.sin(theta)}),magnification:mu});
+    results.push({direction:normalizeVector({x:toHole.x*Math.cos(theta)+signedAxis.x*Math.sin(theta),y:toHole.y*Math.cos(theta)+signedAxis.y*Math.sin(theta),z:toHole.z*Math.cos(theta)+signedAxis.z*Math.sin(theta)}),magnification:mu*transmission});
   }
   return results;
 }
@@ -198,13 +216,15 @@ bool applyRelativisticLens(inout vec3 direction,inout float magnitude,vec3 toHol
   vec3 axis=length(offset)>1e-7?normalize(offset):normalize(abs(toHole.z)<.9?cross(vec3(0.0,0.0,1.0),toHole):cross(vec3(0.0,1.0,0.0),toHole));axis*=sign;
   float b=unpack16(inverse)*64.0;
   float crossing=atan(toHole.z,axis.z);if(crossing<=0.0)crossing+=3.141592653589793;
-  for(int i=0;i<3;i++){float r=orbitRadius(b,crossing+float(i)*3.141592653589793);if(r>3.0&&r<40.0)return false;}
+  float transmission=1.0;
+  for(int i=0;i<3;i++){float r=orbitRadius(b,crossing+float(i)*3.141592653589793);transmission*=1.0-discOpacity(r);}
+  if(transmission<=0.0)return false;
   float scale=sqrt(1.0-1.0/relativisticRadius)/relativisticRadius;
   float theta=asin(clamp(b*scale,0.0,1.0)),h=9.42477796077/1023.0;
   float derivative=abs(inverseImpact(min(9.42477796077,phi+h))-inverseImpact(max(0.0,phi-h)))/(2.0*h);
   float mu=sin(theta)/max(sin(beta),.00001)*scale/max(cos(theta),.00001)*derivative;
   direction=normalize(toHole*cos(theta)+axis*sin(theta));
-  magnitude-=2.5*log(max(mu,.0000001))/log(10.0);return true;
+  magnitude-=2.5*log(max(mu*transmission,.0000001))/log(10.0);return true;
 }`;
 /** Camera exposure placing the hottest visible thermal band near middle grey. */
 export function blackHoleCameraExposure(massSolar:number,luminosityRatio:number,bolometric=false) {

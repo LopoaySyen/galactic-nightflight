@@ -87,7 +87,7 @@ export function createStarGpuRenderer(canvas: HTMLCanvasElement): StarGpuRendere
   const buffer=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
   for(const [name,size,offset] of [["position",3,0],["velocity",3,12],["magnitude",1,24],["colour",3,28],["phase",1,40]] as const){
     const attribute=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(attribute);gl.vertexAttribPointer(attribute,size,gl.FLOAT,false,44,offset);}
-  const uniforms=Object.fromEntries(["rayOrbits","rayInverse","relativisticRadius","lensDirection","lensDistance","lensStrength","lensShadow","secondaryImage","observerOffset","forward","cameraRight","cameraUp","zenith","tangentFov","elapsedYears","atmosphere","mode","exposure","daylightPenalty","pixelRatio","scintillationTime","scintillationEnabled"].map(name=>[name,gl.getUniformLocation(program,name)]));
+  const uniforms=Object.fromEntries(["rayOrbits","rayInverse","relativisticRadius","discEdgeFade","lensDirection","lensDistance","lensStrength","lensShadow","secondaryImage","observerOffset","forward","cameraRight","cameraUp","zenith","tangentFov","elapsedYears","atmosphere","mode","exposure","daylightPenalty","pixelRatio","scintillationTime","scintillationEnabled"].map(name=>[name,gl.getUniformLocation(program,name)]));
   let count=0, epoch=0, lensStrength=0, relativistic=false;
   let lastTable:SchwarzschildRayTable|undefined;
   const rayTextures=[0,1].map(unit=>{const texture=gl.createTexture()!;gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);
@@ -123,6 +123,7 @@ export function createStarGpuRenderer(canvas: HTMLCanvasElement): StarGpuRendere
         if(lastTable!==table){for(const [unit,data,height] of [[0,table.pixels,512],[1,table.inverse,1]] as const){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,rayTextures[unit]);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1024,height,0,gl.RGBA,gl.UNSIGNED_BYTE,data);}lastTable=table;}
       }
       gl.uniform1f(uniforms.relativisticRadius,relativistic?lastTable!.observerRadius:0);
+      gl.uniform1f(uniforms.discEdgeFade,lens?.discEdgeFade?1:0);
       gl.uniform3f(uniforms.lensDirection,lens?.direction.x??0,lens?.direction.y??0,lens?.direction.z??1);
       gl.uniform1f(uniforms.lensDistance,lens?.distance??0);gl.uniform1f(uniforms.lensStrength,lensStrength);gl.uniform1f(uniforms.lensShadow,lens?.shadowAngle??0);
       const basis=createCameraBasis(camera);
