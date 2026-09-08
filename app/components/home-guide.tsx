@@ -1,5 +1,6 @@
 "use client";
 
+import { HomeReading } from './home-reading';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { HomeLanguage } from '@/lib/landing/home-content';
 
@@ -68,7 +69,7 @@ export function HomeGuide({ language }: { language: HomeLanguage }) {
       }}>
         <span className="nf-guide-step-title">{step.title[language]}<span aria-hidden="true">↗</span></span>
         <span className="nf-guide-step-hint">{step.hint[language]}</span>
-        <span className="nf-guide-step-body">{step.body[language]}</span>
+        <span className="nf-guide-step-body"><HomeReading language={language}>{step.body[language]}</HomeReading></span>
       </button>)}
     </div>
     <div className="nf-guide-preview" ref={previewRef}>
@@ -82,8 +83,8 @@ export function HomeGuide({ language }: { language: HomeLanguage }) {
     <div className="nf-guide-meta">
       <span className="nf-guide-shot-label">{en ? 'RECORDED IN THE OBSERVATORY' : '实际操作录制'}</span>
       <button type="button" className="nf-guide-playback" aria-pressed={animate} onClick={() => setPlayback(animate ? 'still' : 'play')}>{animate ? (en ? 'Show still image' : '显示静态图') : (en ? 'Play demonstration' : '播放演示')}</button>
-      <span className="nf-guide-caption">{steps[selected].caption[language]}</span>
-      <p className="nf-guide-mobile-copy">{steps[selected].body[language]}</p>
+      <span className="nf-guide-caption"><HomeReading language={language}>{steps[selected].caption[language]}</HomeReading></span>
+      <p className="nf-guide-mobile-copy"><HomeReading language={language}>{steps[selected].body[language]}</HomeReading></p>
     </div>
   </div>;
 }

@@ -1665,7 +1665,7 @@ body:has(.nf-home) {height:auto;min-height:100vh;overflow:visible;}
 
 .nf-guide-heading {max-width:none;}
 .nf-guide-heading>.nf-body {max-width:none;}
-@media(min-width:801px){.nf-home:not(.nf-english) .nf-guide-heading>.nf-body {white-space:nowrap;}}
+.nf-guide-heading>.nf-body {white-space:normal;}
 
 /* Keep the shared flight scene visible between the text and recorded controls. */
 .nf-guide {background:none;box-shadow:none;}
@@ -1711,3 +1711,12 @@ body:has(.nf-home) {height:auto;min-height:100vh;overflow:visible;}
 @media(max-width:800px){.nf-guide-heading{margin-bottom:30px;}.nf-guide-demo{grid-template-columns:1fr;gap:24px;}.nf-guide-tabs{display:flex;flex-direction:row;align-items:stretch;}.nf-guide-step{flex:1;min-width:0;padding:14px 10px;border-left:0;border-bottom:2px solid #b8c6d321;text-align:center;}.nf-guide-step[aria-selected="true"]{border-bottom-color:#d9c6a8;background:linear-gradient(0deg,#d9c6a80b,transparent);}.nf-guide-step-title{font-size:15px;display:block;}.nf-guide-step-title>span{display:none;}.nf-guide-step-hint{font-size:11px;}.nf-guide-step[aria-selected="true"] .nf-guide-step-body{display:none;}.nf-guide-meta{grid-column:1;}.nf-guide-image-link{border-radius:0;}.nf-guide-expand{opacity:1;transform:none;top:9px;right:9px;font-size:11px;padding:7px 10px;}.nf-guide-meta{font-size:12px;}.nf-guide-scene-label{max-width:55%;font-size:11px;}}
 @media(max-width:1150px){.nf-guide-step[aria-selected="true"] .nf-guide-step-body{display:none;}.nf-guide-mobile-copy{display:block;margin:17px 0 0;color:#b4c3d3;font-size:14px;line-height:1.85;}}
 @media(prefers-reduced-motion:reduce){.nf-guide-step,.nf-guide-shot,.nf-guide-step-title>span,.nf-guide-expand{transition:none;transform:none;}}
+
+/* Break at authored phrases, with an internal fallback for narrow screens and zoom. */
+.nf-reading-phrase {display:inline-block;max-inline-size:100%;vertical-align:top;white-space:normal;word-break:normal;overflow-wrap:normal;line-break:strict;text-wrap:pretty;}
+.nf-home .nf-body,.nf-home .nf-note,.nf-intro-description,.nf-source-note p,.nf-guide-step-body,.nf-guide-mobile-copy {word-break:normal;line-break:strict;text-wrap:pretty;}
+.nf-feature-copy,.nf-source-copy,.nf-source-note {min-inline-size:0;}
+.nf-feature-copy h2,.nf-guide h2,.nf-source h2,.nf-source-note h3 {word-break:normal;line-break:strict;}
+.nf-feature-copy h2 {max-inline-size:12em;}
+.nf-feature-copy .nf-body {max-inline-size:32em;}
+@media(max-width:800px){.nf-feature-copy h2,.nf-guide h2,.nf-source h2{font-size:clamp(28px,4.2vw,34px);}.nf-english .nf-feature-copy h2,.nf-english .nf-guide h2,.nf-english .nf-source h2{font-size:clamp(29px,5vw,39px);}}

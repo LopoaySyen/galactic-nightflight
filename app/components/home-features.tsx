@@ -1,4 +1,5 @@
 "use client";
+import { HomeReading } from './home-reading';
 import { useState } from 'react';
 import { homeFeatures, homePhotos, type HomeLanguage } from '@/lib/landing/home-content';
 
@@ -24,9 +25,9 @@ export function HomeFeatures({ language }: { language: HomeLanguage }) {
             <img src={photo.image} srcSet={photo.srcSet} sizes="(max-width: 800px) 100vw, 75vw" alt={photo.name[language]} loading="lazy" decoding="async"/>
             <figcaption>{en ? 'Photo' : '摄影'} · {photo.name[language]}<a href={photo.source} target="_blank" rel="noreferrer">{photo.credit} ↗</a></figcaption>
           </figure>
-          <div className="nf-feature-copy"><h2>{feature.title[language]}</h2><p className="nf-body">{feature.body[language]}</p>
+          <div className="nf-feature-copy"><h2><HomeReading language={language}>{feature.title[language]}</HomeReading></h2><p className="nf-body"><HomeReading language={language}>{feature.body[language]}</HomeReading></p>
             <div className="nf-feature-points">{feature.points[language].map(point => <span key={point}>{point}</span>)}</div>
-            <p className="nf-note">{feature.detail[language]}</p>
+            <p className="nf-note"><HomeReading language={language}>{feature.detail[language]}</HomeReading></p>
           </div>
         </div>;
       })}
