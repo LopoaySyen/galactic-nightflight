@@ -372,7 +372,7 @@ test("the local ground is a perspective plane that responds to camera yaw", () =
 });
 
 test("the galaxy population tracer catalogue is fixed in three-dimensional space", () => {
-  assert.equal(modelPopulationEmitters.length, 73_728);
+  assert.equal(modelPopulationEmitters.length, 184_320);
   assert.equal(
     new Set(modelPopulationEmitters.map((star) => star.id)).size,
     modelPopulationEmitters.length,
@@ -437,7 +437,7 @@ test("catalogued and statistical extragalactic sources retain distance and angul
 });
 
 test("deep-sky observation images stay bound to physical sky directions and angular scale", () => {
-  assert.equal(deepSkyImageSources.length, 4);
+  assert.equal(deepSkyImageSources.length, 8);
   const projected = projectDeepSkyImageSources(
     deepSkyImageSources,
     { x: -8_277, y: 0, z: 0 },

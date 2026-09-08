@@ -3,15 +3,17 @@ import type {DeepSkyTarget} from '@/lib/rendering/sky-object-catalog';
 import type {Vector3} from '@/lib/physics/vector';
 const number=(value:number)=>value.toLocaleString('zh-CN',{maximumFractionDigits:2});
 export function DeepSkyDetail({target,observer,onClose,onCentre}:{target:DeepSkyTarget;observer:Vector3;onClose:()=>void;onCentre:()=>void}){
-  const { t } = useObservationLanguage();
+  const { t,language } = useObservationLanguage();
   const referenceDistance=Math.hypot(target.positionParsec.x+8277,target.positionParsec.y,target.positionParsec.z);
   const distance=Math.hypot(target.positionParsec.x-observer.x,target.positionParsec.y-observer.y,target.positionParsec.z-observer.z);
   return <aside className="star-detail deep-sky-detail" aria-label={t("选中星云、星团或星系的资料")}>
-    <div className="star-detail-heading"><div><span>{t(target.kind)}{t(" · 目录天体")}</span><h2>{t(target.name)}</h2></div><button type="button" onClick={onClose} aria-label={t("关闭天体详情")}>×</button></div>
-    <p>{t(target.description)}</p>
+    <div className="star-detail-heading"><div><span>{t(target.kind)}{t(" · 目录天体")}</span><h2>{language==='en'&&target.nameEn?target.nameEn:t(target.name)}</h2></div><button type="button" onClick={onClose} aria-label={t("关闭天体详情")}>×</button></div>
+    <p>{language==='en'&&target.descriptionEn?target.descriptionEn:t(target.description)}</p>
+    {target.image?.redshift?<dl><div><dt>{language==='en'?'Source redshift':'背景源红移'}</dt><dd>{target.image.redshift}</dd></div><div><dt>{language==='en'?'Angular-diameter distance for projection':'用于投影的角直径距离'}</dt><dd>{number(referenceDistance/1e6)} Mpc</dd></div></dl>:<>
     <p className="object-unit-note">{t("光年是光在一年中传播的距离。下列数值越大表示越远，没有优劣之分；参考距离从太阳附近计算，当前距离从你的观察位置计算。")}</p>
     <dl><div><dt>{t("采用的参考距离")}</dt><dd>{t("约 ")}{number(referenceDistance*3.26156)}{t(" 光年")}</dd></div>
       <div className="star-detail-current"><dt>{t("距当前观察者")}</dt><dd>{t("约 ")}{number(distance*3.26156)}{t(" 光年")}</dd></div></dl>
+    </>}
     {target.aliases.length>0&&<p className="star-detail-source">{t("其他名称与目录写法：")}{target.aliases.join(' / ')}</p>}
     <button type="button" className="star-centre" onClick={onCentre}>{t("居中并放大观察")}</button>
     {target.image?<div className="object-source"><p>{t("照片署名：")}{target.image.creditShort}</p>

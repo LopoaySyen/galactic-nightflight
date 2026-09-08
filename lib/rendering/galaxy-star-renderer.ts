@@ -1,3 +1,4 @@
+import { lensedPointImages, type LensView } from '../physics/gravitational-lensing.ts';
 import { projectRelativePositionToSky, relativePositionParsec } from "../physics/coordinates.ts";
 import { apparentMagnitude } from "../physics/photometry.ts";
 import { pointSourcePositionAtTime } from "../physics/kinematics.ts";
@@ -50,7 +51,12 @@ export function prepareGalaxyPointSources(
   simulationTimeYears = 0,
 ): PreparedGalaxyPointSource[] {
   const preparedSources: PreparedGalaxyPointSource[] = [];
+  const solarSeparation = Math.hypot(observerPositionParsec.x + 8277, observerPositionParsec.y, observerPositionParsec.z);
+  const blendCoordinate = clamp((solarSeparation - 100) / 900, 0, 1);
+  const localCatalogueWeight = 1 - blendCoordinate ** 2 * (3 - 2 * blendCoordinate);
   for (const emitter of emitters) {
+    if (emitter.solarNeighbourhoodOnly && localCatalogueWeight <= 0) continue;
+    const catalogueMagnitude = emitter.solarNeighbourhoodOnly ? -2.5 * Math.log10(localCatalogueWeight) : 0;
     const emitterPositionParsec = pointSourcePositionAtTime(
       emitter,
       simulationTimeYears,
@@ -66,7 +72,7 @@ export function prepareGalaxyPointSources(
     );
     if (!(distanceParsec > 1e-8)) continue;
     const unextinguishedMagnitude = apparentMagnitude(
-      emitter.absoluteVisualMagnitude,
+      emitter.absoluteVisualMagnitude + catalogueMagnitude,
       distanceParsec,
       0,
     );
@@ -97,7 +103,7 @@ export function prepareGalaxyPointSources(
       id: emitter.id,
       emitterPositionParsec,
       velocityKilometresPerSecond: emitter.velocityKilometresPerSecond,
-      absoluteVisualMagnitude: emitter.absoluteVisualMagnitude,
+      absoluteVisualMagnitude: emitter.absoluteVisualMagnitude + catalogueMagnitude,
       preparationTimeYears: simulationTimeYears,
       distanceParsec,
       apparentVisualMagnitude,
@@ -122,6 +128,7 @@ export function projectPreparedGalaxyPointSources(
   canvasHeight: number,
   liveObserverPositionParsec?: Vector3,
   liveTimeYears?: number,
+  lens: LensView | null = null,
 ): ProjectedPointSource[] {
   const projectedSources: ProjectedPointSource[] = [];
   const basis = createCameraBasis(camera);
@@ -135,24 +142,27 @@ export function projectPreparedGalaxyPointSources(
     const x = liveObserverPositionParsec ? source.emitterPositionParsec.x+(velocity?.x??0)*dt-liveObserverPositionParsec.x : source.skyDirection.x;
     const y = liveObserverPositionParsec ? source.emitterPositionParsec.y+(velocity?.y??0)*dt-liveObserverPositionParsec.y : source.skyDirection.y;
     const z = liveObserverPositionParsec ? source.emitterPositionParsec.z+(velocity?.z??0)*dt-liveObserverPositionParsec.z : source.skyDirection.z;
-    const front = x*basis.forward.x+y*basis.forward.y+z*basis.forward.z;
-    if(!Number.isFinite(front)||front<=0) continue;
-    const screenX=(x*basis.right.x+y*basis.right.y+z*basis.right.z)/(front*tangentX);
-    const screenY=(x*basis.up.x+y*basis.up.y+z*basis.up.z)/(front*tangentY);
-    if(Math.abs(screenX)>1||Math.abs(screenY)>1) continue;
     const length = Math.hypot(x,y,z);
     if(length<1e-8) continue;
     const distanceParsec=liveObserverPositionParsec ? length : source.distanceParsec;
+    for(const image of lensedPointImages({x:x/length,y:y/length,z:z/length},distanceParsec,lens)) {
+    const direction=image.direction;
+    const front=direction.x*basis.forward.x+direction.y*basis.forward.y+direction.z*basis.forward.z;
+    if(!Number.isFinite(front)||front<=0)continue;
+    const screenX=(direction.x*basis.right.x+direction.y*basis.right.y+direction.z*basis.right.z)/(front*tangentX);
+    const screenY=(direction.x*basis.up.x+direction.y*basis.up.y+direction.z*basis.up.z)/(front*tangentY);
+    if(Math.abs(screenX)>1||Math.abs(screenY)>1)continue;
     projectedSources.push({
       id:source.id, role:source.role, displayName:source.displayName,
       canvasX:(screenX+1)*canvasWidth/2,canvasY:(1-screenY)*canvasHeight/2,
       distanceParsec,
       // Observed sources store a signed correction relative to solar-reference
       // extinction, not an absolute dust column. Keep the physical API non-negative.
-      apparentVisualMagnitude:liveObserverPositionParsec ? apparentMagnitude(source.absoluteVisualMagnitude,distanceParsec,0)+source.extinctionMagnitude : source.apparentVisualMagnitude,
+      apparentVisualMagnitude:(liveObserverPositionParsec ? apparentMagnitude(source.absoluteVisualMagnitude,distanceParsec,0)+source.extinctionMagnitude : source.apparentVisualMagnitude)-2.5*Math.log10(Math.max(image.magnification,1e-7)),
       extinctionMagnitude:source.extinctionMagnitude,linearRgb:source.linearRgb,
-      skyDirection:liveObserverPositionParsec ? {x:x/length,y:y/length,z:z/length} : source.skyDirection,
+      skyDirection:direction,
     });
+  }
   }
   return projectedSources;
 }

@@ -364,5 +364,19 @@
   "北河三": "Pollux",
   "北落师门": "Fomalhaut",
   "天津四": "Deneb",
-  "轩辕十四": "Regulus"
+  "轩辕十四": "Regulus",
+  "来到盘下，仰望银河": "Look up at the Milky Way from below the disc",
+  "已离开银河盘面并回望银河，时间已暂停。": "Moved outside the disc and turned back toward the Milky Way. Time is paused.",
+  "已回望并锁定银河中心。": "Looking back toward the tracked Galactic centre.",
+  "已跳转至{0}，模拟时间已归零。已回望并锁定银河中心。": "Moved to {0} and reset time. Looking back toward the tracked Galactic centre.",
+  "已标记黑洞方向；其真实角大小通常远低于肉眼分辨能力。": "Black-hole direction marked. Its true angular size is usually below naked-eye resolution.",
+  "引力近景 · 吸积流与点质量透镜示意，时间已暂停。": "Gravitational close-up · illustrative accretion flow and point-mass lensing. Time paused.",
+  "船底座星云 NGC 3372": "Carina Nebula",
+  "由气体和尘埃组成的恒星形成区。这张地面观测图组合了氧、氢与硫的发射线，颜色并不等同于肉眼所见。": "A star-forming complex of gas and dust. This ground-based image combines oxygen, hydrogen and sulfur emission lines; the colours differ from naked-eye vision.",
+  "螺旋星云 NGC 7293": "Helix Nebula",
+  "邻近的行星状星云：恒星晚期抛出的气体形成发光壳层。“行星状”描述其外观，并不表示它是行星。": "A nearby planetary nebula: glowing gas shed by an ageing star. The name describes its appearance, not a planet.",
+  "涡状星系 M51": "Whirlpool Galaxy M51",
+  "正面朝向我们的旋涡星系，与伴星系 NGC 5195 相互作用。哈勃照片中可见沿旋臂分布的年轻恒星与暗尘埃带。": "A face-on spiral interacting with NGC 5195. Hubble resolves young stars and dark dust lanes along its spiral arms.",
+  "熔融环 · 引力透镜": "Molten Ring · Gravitational Lens",
+  "这是哈勃拍到的真实引力透镜：前景星系团使后方星系的光线偏折，形成近似爱因斯坦环。照片已包含透镜效应；远距离只用于天空投影，不表示欧氏空间中的航行距离。": "A real Hubble gravitational lens: a foreground galaxy cluster bends a background galaxy into an almost complete Einstein ring. The photograph already contains lensing; the adopted angular-diameter distance is for projection, not Euclidean travel."
 }

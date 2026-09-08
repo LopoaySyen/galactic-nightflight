@@ -1,3 +1,4 @@
+import type { LensView } from '../physics/gravitational-lensing.ts';
 import type { ObservationMode, ViewCamera } from "./contracts.ts";
 import type { Vector3 } from "../physics/vector.ts";
 import type { AtmospherePreset } from "./planet-atmosphere.ts";
@@ -8,13 +9,25 @@ const vertexSource=`attribute vec2 position;void main(){gl_Position=vec4(positio
 const fragmentSource=`precision highp float;
 uniform sampler2D sky;
 uniform vec2 resolution;
+uniform vec3 lensDirection;
+uniform float lensDistance,lensStrength,lensShadow;
 uniform vec3 forward,cameraRight,cameraUp,zenith,sun;
 uniform float tangentHalfFov,exposure,atmosphere,infrared,sunAltitude,daylightPenalty;
 const float pi=3.141592653589793;
 void main(){
   vec2 screen=gl_FragCoord.xy/resolution*2.0-1.0;
   vec3 direction=normalize(forward+cameraRight*screen.x*tangentHalfFov+cameraUp*screen.y*tangentHalfFov*resolution.y/resolution.x);
-  vec2 uv=vec2(atan(direction.y,direction.x)/(2.0*pi)+0.5,0.5-asin(clamp(direction.z,-1.0,1.0))/pi);
+  vec3 sampledDirection=direction;
+  if(lensStrength>0.0&&lensDistance<1.0){
+    float cosine=dot(direction,lensDirection);
+    if(cosine>0.0){
+      vec3 offset=direction/cosine-lensDirection;
+      float theta2=dot(offset,offset);
+      if(theta2<lensShadow*lensShadow){gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;}
+      if(theta2<400.0*lensStrength)sampledDirection=normalize(lensDirection+offset*(1.0-lensStrength/max(theta2,0.00000000000001)));
+    }
+  }
+  vec2 uv=vec2(atan(sampledDirection.y,sampledDirection.x)/(2.0*pi)+0.5,0.5-asin(clamp(sampledDirection.z,-1.0,1.0))/pi);
   vec3 colour=texture2D(sky,uv).rgb;
   colour=pow(min(vec3(1.0),pow(colour,vec3(2.2))*pow(2.0,exposure)),vec3(1.0/2.2));
   if(atmosphere>0.5){
@@ -45,7 +58,7 @@ void main(){
 export interface SkyBackgroundGpuRenderer {
   setSky(pixels: Uint8ClampedArray,width:number,height:number):void;
   render(camera:ViewCamera,width:number,height:number,zenith:Vector3,sun:Vector3,sunAltitude:number,
-    atmosphere:AtmospherePreset,mode:ObservationMode,exposure:number):boolean;
+    atmosphere:AtmospherePreset,mode:ObservationMode,exposure:number,lens?:LensView|null):boolean;
   dispose():void;
 }
 
@@ -59,17 +72,19 @@ export function createSkyBackgroundGpuRenderer(canvas:HTMLCanvasElement):SkyBack
   gl.useProgram(program);
   const buffer=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   const attribute=gl.getAttribLocation(program,"position");gl.enableVertexAttribArray(attribute);gl.vertexAttribPointer(attribute,2,gl.FLOAT,false,0,0);
-  const uniforms=Object.fromEntries(["sky","resolution","forward","cameraRight","cameraUp","zenith","sun","tangentHalfFov","exposure","atmosphere","infrared","sunAltitude","daylightPenalty"].map(name=>[name,gl.getUniformLocation(program,name)]));
+  const uniforms=Object.fromEntries(["lensDirection","lensDistance","lensStrength","lensShadow","sky","resolution","forward","cameraRight","cameraUp","zenith","sun","tangentHalfFov","exposure","atmosphere","infrared","sunAltitude","daylightPenalty"].map(name=>[name,gl.getUniformLocation(program,name)]));
   const texture=gl.createTexture()!;gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.uniform1i(uniforms.sky,0);
   let loaded=false;
   return{
     setSky(pixels,width,height){gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,pixels);loaded=true;},
-    render(camera,width,height,zenith,sun,sunAltitude,atmosphere,mode,exposure){
+    render(camera,width,height,zenith,sun,sunAltitude,atmosphere,mode,exposure,lens=null){
       if(gl.isContextLost()||!loaded)return false;
       if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
       gl.viewport(0,0,width,height);gl.useProgram(program);
+      gl.uniform3f(uniforms.lensDirection,lens?.direction.x??0,lens?.direction.y??0,lens?.direction.z??1);
+      gl.uniform1f(uniforms.lensDistance,lens?.distance??0);gl.uniform1f(uniforms.lensStrength,lens?.strength??0);gl.uniform1f(uniforms.lensShadow,lens?.shadowAngle??0);
       const basis=createCameraBasis(camera);gl.uniform2f(uniforms.resolution,width,height);
       for(const [name,value] of [["forward",basis.forward],["cameraRight",basis.right],["cameraUp",basis.up],["zenith",zenith],["sun",sun]] as const)gl.uniform3f(uniforms[name],value.x,value.y,value.z);
       gl.uniform1f(uniforms.tangentHalfFov,Math.tan(camera.horizontalFieldOfViewDegrees*Math.PI/360));

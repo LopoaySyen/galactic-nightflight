@@ -1799,3 +1799,12 @@ body:has(.nf-home) {height:auto;min-height:100vh;overflow:visible;}
 .observation-music button:focus-visible,.observation-music input:focus-visible,.observation-music summary:focus-visible {outline:2px solid #d6bd8d;outline-offset:4px;}
 @media(max-width:720px){.observation-music{top:69px;right:12px;}.music-trigger{font-size:11px;padding:7px 10px;}.music-panel{width:min(308px,calc(100vw - 24px));max-height:calc(100dvh - 128px);padding:14px 16px;}}
 @media(max-height:600px) and (min-width:721px){.observation-music{top:66px;}.music-panel{max-height:calc(100dvh - 119px);}}
+
+.cosmos-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:12px 0 24px; }
+.cosmos-grid button { padding:10px; text-align:left; color:#dfe8f0; background:#111b29; border:1px solid #26364b; border-radius:12px; cursor:pointer; }
+.cosmos-grid button:hover { border-color:#8daaba; background:#182739; }
+.cosmos-grid img { width:100%; height:94px; object-fit:cover; border-radius:7px; margin-bottom:8px; }
+.cosmos-grid strong,.cosmos-grid small { display:block; }
+.cosmos-grid small { color:#92a8bc; margin-top:6px; }
+.cosmos-panel p,.cosmos-panel a { font-size:12px; line-height:1.8; color:#aabccc; }
+.compact-object-detail figcaption { color:#9aaabd; font-size:11px; line-height:1.65; }

@@ -2,7 +2,7 @@ import type { PointSourceSample } from "../rendering/contracts.ts";
 import type { Vector3 } from "./vector.ts";
 
 export const PARSEC_PER_YEAR_PER_KILOMETRE_PER_SECOND = 1.022712165e-6;
-const CIRCULAR_SPEED_KILOMETRES_PER_SECOND = 232;
+import { galacticAcceleration, galacticCircularSpeed } from './galactic-gravity.ts';
 
 export interface PhaseSpaceState {
   positionParsec: Vector3;
@@ -14,9 +14,7 @@ export function circularVelocityAtPosition(
 ): Vector3 {
   const radiusParsec = Math.hypot(positionParsec.x, positionParsec.y);
   if (!(radiusParsec > 0)) return { x: 0, y: 0, z: 0 };
-  const speed =
-    CIRCULAR_SPEED_KILOMETRES_PER_SECOND *
-    (1 - Math.exp(-radiusParsec / 700));
+  const speed = galacticCircularSpeed(positionParsec);
   return {
     x: (positionParsec.y / radiusParsec) * speed,
     y: (-positionParsec.x / radiusParsec) * speed,
@@ -24,23 +22,12 @@ export function circularVelocityAtPosition(
   };
 }
 
-function flatRotationCurveAccelerationParsecPerYearSquared(
+function galacticAccelerationParsecPerYearSquared(
   positionParsec: Vector3,
 ): Vector3 {
-  const planarRadiusParsec = Math.hypot(positionParsec.x, positionParsec.y);
-  if (!(planarRadiusParsec > 20)) return { x: 0, y: 0, z: 0 };
-  const circularSpeedParsecPerYear =
-    CIRCULAR_SPEED_KILOMETRES_PER_SECOND *
-    (1 - Math.exp(-planarRadiusParsec / 700)) *
-    PARSEC_PER_YEAR_PER_KILOMETRE_PER_SECOND;
-  const planarAcceleration =
-    -(circularSpeedParsecPerYear ** 2) / planarRadiusParsec;
-  const verticalFrequencyPerYear = 7.4e-8;
-  return {
-    x: planarAcceleration * (positionParsec.x / planarRadiusParsec),
-    y: planarAcceleration * (positionParsec.y / planarRadiusParsec),
-    z: -(verticalFrequencyPerYear ** 2) * positionParsec.z,
-  };
+  const acceleration = galacticAcceleration(positionParsec);
+  const conversion = PARSEC_PER_YEAR_PER_KILOMETRE_PER_SECOND ** 2;
+  return { x: acceleration.x * conversion, y: acceleration.y * conversion, z: acceleration.z * conversion };
 }
 
 export function integratePhaseSpaceLeapfrog(
@@ -51,7 +38,7 @@ export function integratePhaseSpaceLeapfrog(
     throw new RangeError("Elapsed time must be finite.");
   }
   if (elapsedYears === 0) return state;
-  const accelerationStart = flatRotationCurveAccelerationParsecPerYearSquared(
+  const accelerationStart = galacticAccelerationParsecPerYearSquared(
     state.positionParsec,
   );
   const velocityStartParsecPerYear = {
@@ -76,7 +63,7 @@ export function integratePhaseSpaceLeapfrog(
     z: state.positionParsec.z + halfVelocity.z * elapsedYears,
   };
   const accelerationEnd =
-    flatRotationCurveAccelerationParsecPerYearSquared(positionParsec);
+    galacticAccelerationParsecPerYearSquared(positionParsec);
   const velocityEndParsecPerYear = {
     x: halfVelocity.x + 0.5 * accelerationEnd.x * elapsedYears,
     y: halfVelocity.y + 0.5 * accelerationEnd.y * elapsedYears,

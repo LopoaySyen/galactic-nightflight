@@ -1,3 +1,4 @@
+import expandedImages from '../../public/data/deep-sky-expansion.json' with { type: 'json' };
 import { projectRelativePositionToSky, relativePositionParsec } from "../physics/coordinates.ts";
 import type { Vector3 } from "../physics/vector.ts";
 import type { ViewCamera } from "./contracts.ts";
@@ -11,6 +12,11 @@ const SOLAR_POSITION_PARSEC = { x: -8_277, y: 0, z: 0 } as const;
 export interface DeepSkyImageSource {
   id: string;
   displayName: string;
+  displayNameEn?: string;
+  aliases?: string[];
+  description?: string;
+  descriptionEn?: string;
+  redshift?: number;
   objectClass: "emission-nebula" | "open-cluster" | "globular-cluster" | "galaxy";
   imagePath: string;
   positionParsec: Vector3;
@@ -97,6 +103,7 @@ function galacticObject(
 }
 
 export const deepSkyImageSources: readonly DeepSkyImageSource[] = [
+  ...expandedImages.map(source=>galacticObject({...source,objectClass:source.objectClass as DeepSkyImageSource["objectClass"]})),
   galacticObject({
     id: "m42-image",
     displayName: "猎户座大星云 M42",

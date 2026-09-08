@@ -1,12 +1,12 @@
 import type { PointSourceSample } from "./contracts.ts";
 import { circularVelocityAtPosition } from "../physics/kinematics.ts";
+import { BAR_ANGLE_RADIANS, spiralArmField } from './galaxy-radiance.ts';
 
-const THIN_DISC_COUNT = 45_056;
-const THICK_DISC_COUNT = 8_192;
-const BAR_AND_BULGE_COUNT = 12_288;
-const NUCLEAR_COMPONENT_COUNT = 4_096;
+const THIN_DISC_COUNT = 122_880;
+const THICK_DISC_COUNT = 24_576;
+const BAR_AND_BULGE_COUNT = 24_576;
+const NUCLEAR_COMPONENT_COUNT = 8_192;
 const HALO_COUNT = 4_096;
-const BAR_ANGLE_RADIANS = (27 * Math.PI) / 180;
 
 function haltonValue(index: number, base: number): number {
   let fraction = 1;
@@ -93,7 +93,7 @@ function createDiscStar(
 ): PointSourceSample {
   const radialScaleParsec = thick ? 3_600 : 2_600;
   const radiusParsec = Math.min(
-    20_000,
+    100_000,
     -radialScaleParsec *
       Math.log(
         Math.max(
@@ -125,13 +125,14 @@ function createDiscStar(
 }
 
 function createBarStar(index: number): PointSourceSample {
-  const xBar = signedExponential(haltonValue(index, 2), 1_250);
-  const yBar = signedExponential(haltonValue(index, 3), 390);
+  // Broad Laplace proposal; acceptance below recovers the continuous boxy bulge.
+  const xBar = signedExponential(haltonValue(index, 2), 3 * 2_450);
+  const yBar = signedExponential(haltonValue(index, 3), 3 * 760);
   const rotated = rotateFromBarFrame(xBar, yBar);
   const positionParsec = {
     x: rotated.x,
     y: rotated.y,
-    z: signedExponential(haltonValue(index, 5), 310),
+    z: signedExponential(haltonValue(index, 5), 3 * 520),
   };
   const patternSpeedKilometresPerSecondPerParsec = 0.039;
   return {
@@ -153,12 +154,12 @@ function createBarStar(index: number): PointSourceSample {
 }
 
 function createNuclearStar(index: number): PointSourceSample {
-  const radiusParsec = -105 * Math.log(Math.max(1e-8, 1 - haltonValue(index, 2)));
-  const azimuthRadians = 2 * Math.PI * haltonValue(index, 3);
+  const radiusParsec = -210 * Math.log(Math.max(1e-10, haltonValue(index, 2) * haltonValue(index, 3)));
+  const azimuthRadians = 2 * Math.PI * haltonValue(index, 7);
   const positionParsec = {
     x: radiusParsec * Math.cos(azimuthRadians),
     y: radiusParsec * Math.sin(azimuthRadians),
-    z: signedExponential(haltonValue(index, 5), 42),
+    z: signedExponential(haltonValue(index, 5), 43),
   };
   const radiusSafe = Math.max(1, Math.hypot(positionParsec.x, positionParsec.y));
   return {
@@ -203,16 +204,30 @@ function createHaloStar(index: number): PointSourceSample {
   };
 }
 
+function sampleComponent(count: number, create: (index: number) => PointSourceSample,
+  acceptance: (position: PointSourceSample['positionParsec']) => number) {
+  const result: PointSourceSample[] = [];
+  for (let index = 1; result.length < count; index++) {
+    const source = create(index);
+    if (haltonValue(index, 41) < acceptance(source.positionParsec)) result.push(source);
+  }
+  return result;
+}
+
 export const modelPopulationEmitters: readonly PointSourceSample[] = [
-  ...Array.from({ length: THIN_DISC_COUNT }, (_, offset) =>
-    createDiscStar(offset + 1, false),
-  ),
-  ...Array.from({ length: THICK_DISC_COUNT }, (_, offset) =>
-    createDiscStar(offset + 1, true),
-  ),
-  ...Array.from({ length: BAR_AND_BULGE_COUNT }, (_, offset) =>
-    createBarStar(offset + 1),
-  ),
+  ...sampleComponent(THIN_DISC_COUNT, index => createDiscStar(index, false), p => {
+    const radius = Math.hypot(p.x, p.y);
+    if (radius > 24000) return 0;
+    return (1 - Math.exp(-((radius / 1650) ** 2))) *
+      (.76 + .42 * spiralArmField(radius, Math.atan2(p.y, p.x))) / (.76 + .42 * 1.35);
+  }),
+  ...sampleComponent(THICK_DISC_COUNT, index => createDiscStar(index, true), p => Math.hypot(p.x, p.y) < 24000 ? 1 : 0),
+  ...sampleComponent(BAR_AND_BULGE_COUNT, createBarStar, p => {
+    const x = Math.abs(p.x * Math.cos(BAR_ANGLE_RADIANS) + p.y * Math.sin(BAR_ANGLE_RADIANS)) / 2450;
+    const y = Math.abs(-p.x * Math.sin(BAR_ANGLE_RADIANS) + p.y * Math.cos(BAR_ANGLE_RADIANS)) / 760;
+    const z = Math.abs(p.z) / 520;
+    return Math.exp((x + y + z) / 3 - (x ** 4 + y ** 4 + z ** 4) ** .25) / (1 + Math.exp((x * 2450 - 5100) / 260));
+  }),
   ...Array.from({ length: NUCLEAR_COMPONENT_COUNT }, (_, offset) =>
     createNuclearStar(offset + 1),
   ),
@@ -220,3 +235,16 @@ export const modelPopulationEmitters: readonly PointSourceSample[] = [
     createHaloStar(offset + 1),
   ),
 ];
+
+/** A magnitude-selected solar catalogue is not a spatial density census.
+ * Keep prominent real anchors, nearby stars and a searched target everywhere.
+ * The fainter naked-eye catalogue is blended locally by the point preparation.
+ */
+export function observedRenderingAnchors(stars: readonly PointSourceSample[], selectedId?: string | null) {
+  return stars.flatMap(source => {
+    if (source.id === selectedId || source.observedData?.catalog === 'nearby-simbad') return [source];
+    const magnitude = source.observedData?.referenceApparentMagnitude ?? Infinity;
+    if (source.observedData?.catalog === 'gaia-dr3' || magnitude > 6.5) return [];
+    return [magnitude <= 3.5 ? source : {...source, solarNeighbourhoodOnly: true}];
+  });
+}

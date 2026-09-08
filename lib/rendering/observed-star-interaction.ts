@@ -2,6 +2,7 @@ import type {ObservationMode, ProjectedPointSource, ViewCamera} from './contract
 import type {Vector3} from '../physics/vector.ts';
 import type {PreparedGalaxyPointSource} from './galaxy-star-renderer.ts';
 import {projectPreparedGalaxyPointSources} from './galaxy-star-renderer.ts';
+import type {LensView} from '../physics/gravitational-lensing.ts';
 import {altitudeFromSkyDirection, atmosphericExtinctionMagnitude, daylightVisibilityPenaltyMagnitude, type AtmospherePreset} from './planet-atmosphere.ts';
 
 import { starName } from './star-identities.ts';
@@ -16,8 +17,8 @@ export const starMagnitudeLimit=(mode:ObservationMode)=>mode==='camera'?12.4:mod
 /** Only observational entries can be selected, using the same current camera,
  * position, time and atmospheric visibility as the rendered stars. */
 export function pickObservedStar(sources:readonly PreparedGalaxyPointSource[],camera:ViewCamera,position:Vector3,timeYears:number,
-  width:number,height:number,x:number,y:number,radius:number,zenith:Vector3,atmosphere:AtmospherePreset,mode:ObservationMode,sunAltitude:number):ProjectedPointSource|null {
-  const projected=projectPreparedGalaxyPointSources(sources.filter(source=>source.role==='observed-bright-star'),camera,width,height,position,timeYears);
+  width:number,height:number,x:number,y:number,radius:number,zenith:Vector3,atmosphere:AtmospherePreset,mode:ObservationMode,sunAltitude:number,lens:LensView|null=null):ProjectedPointSource|null {
+  const projected=projectPreparedGalaxyPointSources(sources.filter(source=>source.role==='observed-bright-star'),camera,width,height,position,timeYears,lens);
   let best:ProjectedPointSource|null=null,bestScore=Infinity;
   for(const source of projected){
     const distanceSquared=(source.canvasX-x)**2+(source.canvasY-y)**2;

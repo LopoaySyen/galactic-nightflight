@@ -7,8 +7,14 @@ export const observerPresets:readonly {id:string;name:string;description:string;
   {id:'near-bulge',name:'核球附近',description:'靠近中心，略高于盘面',position:{x:-1000,y:0,z:300}},
   {id:'outer-disc',name:'外盘深处',description:'从稀疏的外围回望',position:{x:-16000,y:0,z:0}},
   {id:'above-disc',name:'盘面上方',description:'离开盘面，俯望银河',position:{x:-8277,y:0,z:3000}},
+  {id:'below-disc',name:'盘面下方',description:'来到盘下，仰望银河',position:{x:-8277,y:0,z:-3000}},
   {id:'far-side',name:'银河对侧',description:'来到太阳的另一侧',position:{x:8277,y:0,z:0}},
 ];
+
+export function galacticDiscOverview(observer: Vector3, side: 1 | -1) {
+  const position = { x: observer.x, y: observer.y, z: side * Math.max(3000, Math.abs(observer.z)) };
+  return { position, camera: cameraFacingGalacticCentre(position, { azimuthDegrees: 0, elevationDegrees: 0, horizontalFieldOfViewDegrees: 100 }) };
+}
 
 /** Derive the target each frame from the live observer, preserving zoom. */
 export function cameraFacingGalacticCentre(observer:Vector3,current:ViewCamera):ViewCamera {

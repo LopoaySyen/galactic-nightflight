@@ -12,10 +12,10 @@ function assertCentreIsCentred(position,camera){
   assert.ok(Math.abs(projected.canvasY-450)<1e-8);
 }
 
-test('the six observing presets span the inner disc, outer disc, opposite side and vertical space',()=>{
-  assert.equal(observerPresets.length,6);
-  assert.equal(new Set(observerPresets.map(p=>p.id)).size,6);
-  assert.equal(new Set(observerPresets.map(p=>JSON.stringify(p.position))).size,6);
+test('the seven observing presets span the inner disc, outer disc, opposite side and vertical space',()=>{
+  assert.equal(observerPresets.length,7);
+  assert.equal(new Set(observerPresets.map(p=>p.id)).size,7);
+  assert.equal(new Set(observerPresets.map(p=>JSON.stringify(p.position))).size,7);
   for(const preset of observerPresets){
     const distance=Math.hypot(preset.position.x,preset.position.y,preset.position.z);
     assert.ok(Number.isFinite(distance)&&distance>100&&distance<20000);
@@ -23,6 +23,7 @@ test('the six observing presets span the inner disc, outer disc, opposite side a
   }
   assert.ok(observerPresets.some(p=>p.position.x>0));
   assert.ok(observerPresets.some(p=>p.position.z>=3000));
+  assert.ok(observerPresets.some(p=>p.position.z<=-3000));
 });
 
 test('centre tracking stays centred throughout movement, preserving zoom and the local vertical',()=>{

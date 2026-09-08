@@ -1,0 +1,124 @@
+[
+  {
+    "id": "carina-image",
+    "displayName": "船底座星云 NGC 3372",
+    "displayNameEn": "Carina Nebula",
+    "aliases": [
+      "Carina Nebula",
+      "NGC 3372",
+      "船底座大星云"
+    ],
+    "objectClass": "emission-nebula",
+    "imagePath": "/deep-sky/carina.jpg",
+    "imageCentreEquatorial": {
+      "rightAscensionDegrees": 161.14745833333333,
+      "declinationDegrees": -59.9634,
+      "northLeftDegrees": 0.8
+    },
+    "distanceParsec": 2300,
+    "majorAngularDiameterDegrees": 0.5641666666666667,
+    "minorAngularDiameterDegrees": 0.8556666666666667,
+    "creditShort": "NOAO, AURA, NSF, N. Smith (University of Arizona)",
+    "sourcePage": "https://esahubble.org/images/opo1212e/",
+    "description": "由气体和尘埃组成的恒星形成区。这张地面观测图组合了氧、氢与硫的发射线，颜色并不等同于肉眼所见。",
+    "descriptionEn": "A star-forming complex of gas and dust. This ground-based image combines oxygen, hydrogen and sulfur emission lines; the colours differ from naked-eye vision.",
+    "longitudeDegrees": 0,
+    "latitudeDegrees": 0,
+    "positionAngleDegrees": 0,
+    "enhancedScaleMultiplier": 1,
+    "cameraOpacity": 0.85
+  },
+  {
+    "id": "helix-image",
+    "displayName": "螺旋星云 NGC 7293",
+    "displayNameEn": "Helix Nebula",
+    "aliases": [
+      "Helix Nebula",
+      "NGC 7293",
+      "上帝之眼",
+      "Caldwell 63"
+    ],
+    "objectClass": "emission-nebula",
+    "imagePath": "/deep-sky/helix.jpg",
+    "imageCentreEquatorial": {
+      "rightAscensionDegrees": 337.4105416666667,
+      "declinationDegrees": -20.837030555555554,
+      "northLeftDegrees": 0
+    },
+    "distanceParsec": 215,
+    "majorAngularDiameterDegrees": 0.8136666666666666,
+    "minorAngularDiameterDegrees": 0.5653333333333334,
+    "creditShort": "ESO",
+    "sourcePage": "https://www.eso.org/public/images/helix/",
+    "description": "邻近的行星状星云：恒星晚期抛出的气体形成发光壳层。“行星状”描述其外观，并不表示它是行星。",
+    "descriptionEn": "A nearby planetary nebula: glowing gas shed by an ageing star. The name describes its appearance, not a planet.",
+    "longitudeDegrees": 0,
+    "latitudeDegrees": 0,
+    "positionAngleDegrees": 0,
+    "enhancedScaleMultiplier": 1,
+    "cameraOpacity": 0.85
+  },
+  {
+    "id": "m51-image",
+    "displayName": "涡状星系 M51",
+    "displayNameEn": "Whirlpool Galaxy M51",
+    "aliases": [
+      "Whirlpool Galaxy",
+      "M51",
+      "NGC 5194",
+      "涡状星系"
+    ],
+    "objectClass": "galaxy",
+    "imagePath": "/deep-sky/whirlpool.jpg",
+    "imageCentreEquatorial": {
+      "rightAscensionDegrees": 202.46808333333334,
+      "declinationDegrees": 47.213175,
+      "northLeftDegrees": -91.9
+    },
+    "distanceParsec": 7665043.721409387,
+    "majorAngularDiameterDegrees": 0.15933333333333335,
+    "minorAngularDiameterDegrees": 0.11066666666666666,
+    "creditShort": "NASA, ESA, S. Beckwith (STScI), Hubble Heritage Team (STScI/AURA)",
+    "sourcePage": "https://esahubble.org/images/heic0506a/",
+    "description": "正面朝向我们的旋涡星系，与伴星系 NGC 5195 相互作用。哈勃照片中可见沿旋臂分布的年轻恒星与暗尘埃带。",
+    "descriptionEn": "A face-on spiral interacting with NGC 5195. Hubble resolves young stars and dark dust lanes along its spiral arms.",
+    "longitudeDegrees": 0,
+    "latitudeDegrees": 0,
+    "positionAngleDegrees": 0,
+    "enhancedScaleMultiplier": 1,
+    "cameraOpacity": 0.85
+  },
+  {
+    "id": "molten-ring-image",
+    "displayName": "熔融环 · 引力透镜",
+    "displayNameEn": "Molten Ring · Gravitational Lens",
+    "aliases": [
+      "Molten Ring",
+      "GAL-CLUS-022058s",
+      "Einstein Ring",
+      "爱因斯坦环",
+      "引力透镜",
+      "熔融环"
+    ],
+    "objectClass": "galaxy",
+    "imagePath": "/deep-sky/molten-ring.jpg",
+    "imageCentreEquatorial": {
+      "rightAscensionDegrees": 35.23995833333334,
+      "declinationDegrees": -38.55118611111111,
+      "northLeftDegrees": -67
+    },
+    "distanceParsec": 1792050965.8146758,
+    "majorAngularDiameterDegrees": 0.039,
+    "minorAngularDiameterDegrees": 0.02266666666666667,
+    "redshift": 1.4796,
+    "creditShort": "ESA/Hubble & NASA, S. Jha; acknowledgement: L. Shatz",
+    "sourcePage": "https://esahubble.org/images/potw2050a/",
+    "description": "这是哈勃拍到的真实引力透镜：前景星系团使后方星系的光线偏折，形成近似爱因斯坦环。照片已包含透镜效应；远距离只用于天空投影，不表示欧氏空间中的航行距离。",
+    "descriptionEn": "A real Hubble gravitational lens: a foreground galaxy cluster bends a background galaxy into an almost complete Einstein ring. The photograph already contains lensing; the adopted angular-diameter distance is for projection, not Euclidean travel.",
+    "longitudeDegrees": 0,
+    "latitudeDegrees": 0,
+    "positionAngleDegrees": 0,
+    "enhancedScaleMultiplier": 1,
+    "cameraOpacity": 0.85
+  }
+]

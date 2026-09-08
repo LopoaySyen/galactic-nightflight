@@ -50,9 +50,13 @@ export function useSkyComputation(emitters: PointSourceSample[], position: Vecto
     for(const queue of queues){
       queue.worker.onmessage=(event:MessageEvent<SkyWorkerMessage>)=>{
         const message=event.data;
-        if(message.kind==="points"){setPoints(message);return;}
-        if(message.kind==="preview"){setResult(message);return;}
-        if(message.kind==="radiance")setResult(message);
+        const desired=latestRef.current;
+        const fresh='position' in message && !!desired &&
+          Math.hypot(message.position.x-desired.position.x,message.position.y-desired.position.y,message.position.z-desired.position.z)<5 &&
+          queue.active?.mode===desired.mode && (queue.layer==='points'?queue.active?.catalogueVersion===desired.catalogueVersion:queue.active?.grade===desired.grade);
+        if(message.kind==="points"){if(fresh)setPoints(message);return;}
+        if(message.kind==="preview"){if(fresh)setResult(message);return;}
+        if(message.kind==="radiance"&&fresh)setResult(message);
         if(message.kind==="failed")queue.failed=true;
         const latest=latestRef.current;
         queue.ready=!!latest && queue.sentKey===key(latest,queue.layer) && message.kind!=="failed" && message.width>=latest.width;

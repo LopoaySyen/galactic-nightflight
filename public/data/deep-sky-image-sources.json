@@ -52,5 +52,7 @@
     "猎户座照片包含主要星云结构，但边缘仍有向更大分子云延伸的暗弱云气。",
     "照片只有太阳附近方向的二维观测；远离参考视点时的形态是固定图像平面的投影近似，不是完整三维重建。",
     "昴星团保留此前影像，其朝向和完整图幅还没有同样精度的标定。"
-  ]
+  ],
+  "additionalSources": "/data/deep-sky-expansion.json",
+  "gravityAndPhotographLimitations": "/data/galaxy-structure-and-gravity.md"
 }

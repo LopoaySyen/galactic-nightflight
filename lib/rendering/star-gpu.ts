@@ -1,3 +1,4 @@
+import { pointLensGlsl, type LensView } from '../physics/gravitational-lensing.ts';
 import type { ObservationMode, ViewCamera } from "./contracts.ts";
 import type { Vector3 } from "../physics/vector.ts";
 import type { PreparedGalaxyPointSource } from "./galaxy-star-renderer.ts";
@@ -16,10 +17,13 @@ uniform float scintillationTime, scintillationEnabled;
 varying vec3 starColour;
 varying float signal, diameter, pulse;
 ${scintillationGlsl}
+${pointLensGlsl}
 void main() {
   vec3 relative = position + velocity * elapsedYears * 0.000001022712165 - observerOffset;
   float distance = max(length(relative), 0.000001);
   vec3 direction = relative / distance;
+  float lensedMagnitude = magnitude;
+  bool lensVisible = applyPointLens(direction,distance,lensedMagnitude);
   float front = dot(direction, forward);
   float altitude = asin(clamp(dot(direction,zenith),-1.0,1.0)) * 57.295779513;
   float attenuation = 0.0;
@@ -30,10 +34,10 @@ void main() {
     attenuation = airMass * extinction;
     if (scintillationEnabled > 0.5) pulse = atmosphericPulse(scintillationTime,phase,airMass,mode);
   }
-  float apparent = magnitude + 5.0 * log(distance/10.0)/log(10.0) + attenuation + daylightPenalty;
+  float apparent = lensedMagnitude + 5.0 * log(distance/10.0)/log(10.0) + attenuation + daylightPenalty;
   float limit = mode < 0.5 ? 6.2 : mode < 1.5 ? 7.1 : mode < 2.5 ? 12.4 : 12.0;
   vec2 screen = vec2(dot(direction,cameraRight),dot(direction,cameraUp))/(max(front,0.00001)*tangentFov);
-  if (front <= 0.0 || apparent > limit || (atmosphere > 0.5 && altitude <= 0.0) || abs(screen.x)>1.05 || abs(screen.y)>1.05) {
+  if (!lensVisible || front <= 0.0 || apparent > limit || (atmosphere > 0.5 && altitude <= 0.0) || abs(screen.x)>1.05 || abs(screen.y)>1.05) {
     gl_Position=vec4(3.0,3.0,0.0,1.0); gl_PointSize=1.0; signal=0.0; starColour=vec3(0.0); diameter=1.0; return;
   }
   float gain = mode < 0.5 ? 105.0 : mode < 1.5 ? 155.0 : mode < 2.5 ? 420.0 : 360.0;
@@ -61,7 +65,7 @@ export interface StarGpuRenderer {
   setSources(sources: readonly PreparedGalaxyPointSource[], origin: Vector3): void;
   render(camera: ViewCamera, position: Vector3, timeYears: number, width: number, height: number,
     pixelRatio: number, zenith: Vector3, atmosphere: AtmospherePreset, mode: ObservationMode, exposure: number, sunAltitude: number,
-    scintillationTime?: number, scintillationEnabled?: boolean): boolean;
+    scintillationTime?: number, scintillationEnabled?: boolean, lens?: LensView | null): boolean;
   animateAtmosphere(seconds: number): boolean;
   dispose(): void;
 }
@@ -82,8 +86,9 @@ export function createStarGpuRenderer(canvas: HTMLCanvasElement): StarGpuRendere
   const buffer=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
   for(const [name,size,offset] of [["position",3,0],["velocity",3,12],["magnitude",1,24],["colour",3,28],["phase",1,40]] as const){
     const attribute=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(attribute);gl.vertexAttribPointer(attribute,size,gl.FLOAT,false,44,offset);}
-  const uniforms=Object.fromEntries(["observerOffset","forward","cameraRight","cameraUp","zenith","tangentFov","elapsedYears","atmosphere","mode","exposure","daylightPenalty","pixelRatio","scintillationTime","scintillationEnabled"].map(name=>[name,gl.getUniformLocation(program,name)]));
-  let count=0, epoch=0;
+  const uniforms=Object.fromEntries(["lensDirection","lensDistance","lensStrength","lensShadow","secondaryImage","observerOffset","forward","cameraRight","cameraUp","zenith","tangentFov","elapsedYears","atmosphere","mode","exposure","daylightPenalty","pixelRatio","scintillationTime","scintillationEnabled"].map(name=>[name,gl.getUniformLocation(program,name)]));
+  let count=0, epoch=0, lensStrength=0;
+  const drawPoints=()=>{gl.uniform1f(uniforms.secondaryImage,0);gl.drawArrays(gl.POINTS,0,count);if(lensStrength>1e-12){gl.uniform1f(uniforms.secondaryImage,1);gl.drawArrays(gl.POINTS,0,count);}};
   let origin={x:0,y:0,z:0};
   gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);gl.clearColor(0,0,0,0);
   return {
@@ -100,10 +105,13 @@ export function createStarGpuRenderer(canvas: HTMLCanvasElement): StarGpuRendere
       }
       gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);
     },
-    render(camera,position,timeYears,width,height,pixelRatio,zenith,atmosphere,mode,exposure,sunAltitude,scintillationTime=0,scintillationEnabled=false){
+    render(camera,position,timeYears,width,height,pixelRatio,zenith,atmosphere,mode,exposure,sunAltitude,scintillationTime=0,scintillationEnabled=false,lens=null){
       if(gl.isContextLost()) return false;
       if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
       gl.viewport(0,0,width,height);gl.useProgram(program);gl.clear(gl.COLOR_BUFFER_BIT);
+      lensStrength=lens?.strength??0;
+      gl.uniform3f(uniforms.lensDirection,lens?.direction.x??0,lens?.direction.y??0,lens?.direction.z??1);
+      gl.uniform1f(uniforms.lensDistance,lens?.distance??0);gl.uniform1f(uniforms.lensStrength,lensStrength);gl.uniform1f(uniforms.lensShadow,lens?.shadowAngle??0);
       const basis=createCameraBasis(camera);
       for(const [name,value] of [["forward",basis.forward],["cameraRight",basis.right],["cameraUp",basis.up],["zenith",zenith]] as const)gl.uniform3f(uniforms[name],value.x,value.y,value.z);
       gl.uniform3f(uniforms.observerOffset,position.x-origin.x,position.y-origin.y,position.z-origin.z);
@@ -114,12 +122,12 @@ export function createStarGpuRenderer(canvas: HTMLCanvasElement): StarGpuRendere
       gl.uniform1f(uniforms.daylightPenalty,daylightVisibilityPenaltyMagnitude(sunAltitude,atmosphere));
       gl.uniform1f(uniforms.scintillationTime,scintillationTime);
       gl.uniform1f(uniforms.scintillationEnabled,scintillationEnabled?1:0);
-      gl.drawArrays(gl.POINTS,0,count);return true;
+      drawPoints();return true;
     },
     animateAtmosphere(seconds){
       if(gl.isContextLost())return false;
       gl.useProgram(program);gl.uniform1f(uniforms.scintillationTime,seconds);
-      gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.POINTS,0,count);return true;
+      gl.clear(gl.COLOR_BUFFER_BIT);drawPoints();return true;
     },
     dispose(){gl.deleteBuffer(buffer);gl.deleteProgram(program);},
   };

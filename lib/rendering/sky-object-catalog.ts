@@ -7,7 +7,7 @@ import type { Vector3 } from '../physics/vector.ts';
 
 export interface DeepSkyTarget {
   id:string; name:string; aliases:string[]; kind:'星云'|'星团'|'星系';
-  description:string; positionParsec:Vector3; image?:DeepSkyImageSource; galaxy?:ExtragalacticSource;
+  nameEn?:string; descriptionEn?:string; description:string; positionParsec:Vector3; image?:DeepSkyImageSource; galaxy?:ExtragalacticSource;
 }
 const aliases:Record<string,string[]>={
   m42:['M42','猎户座星云','Orion Nebula'],m45:['M45','昴宿星团','七姐妹星团','Pleiades'],
@@ -19,11 +19,11 @@ export const deepSkyTargets:DeepSkyTarget[] = deepSkyImageSources.map(image=>{
   const id=image.id.replace(/-image$/,'');
   const galaxy=cataloguedExtragalacticSources.find(source=>source.id===id);
   const kind=image.objectClass==='galaxy'?'星系':image.objectClass==='emission-nebula'?'星云':'星团';
-  return {id,name:image.displayName,aliases:aliases[id]??[],kind,positionParsec:image.positionParsec,image,galaxy,
-    description:image.objectClass==='emission-nebula'?'星云是由气体和尘埃组成的云状天体。这里展示的是观测照片中的发光云气与暗部结构。':
+  return {id,name:image.displayName,nameEn:image.displayNameEn,descriptionEn:image.descriptionEn,aliases:image.aliases??aliases[id]??[],kind,positionParsec:image.positionParsec,image,galaxy,
+    description:image.description??(image.objectClass==='emission-nebula'?'星云是由气体和尘埃组成的云状天体。这里展示的是观测照片中的发光云气与暗部结构。':
       image.objectClass==='open-cluster'?'这是疏散星团：一群在空间中较松散聚集的恒星。照片也包含恒星周围的云气。':
       image.objectClass==='globular-cluster'?'这是球状星团：大量恒星密集聚集，整体呈近似球形。':
-      '这是银河系外的星系，由大量恒星、气体与尘埃组成。相机模式展示观测照片，其他感光模式展示简化轮廓。'};
+      '这是银河系外的星系，由大量恒星、气体与尘埃组成。相机模式展示观测照片，其他感光模式展示简化轮廓。')};
 });
 for(const galaxy of cataloguedExtragalacticSources){
   if(deepSkyTargets.some(target=>target.id===galaxy.id))continue;

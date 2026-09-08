@@ -56,3 +56,16 @@ Modifications: resampling, softened attacks, low-pass filtering, release envelop
 ## Chinese stellar names
 
 The derived table `public/data/chinese-star-names.json` joins 2,455 existing Hipparcos catalogue entries to Stellarium's Chinese sky culture. Attribution: Karrie Berglund, Sun Shuwei, Stellarium contributors and Chinese translators. Source: https://github.com/Stellarium/stellarium-skycultures/tree/master/chinese . Text/data retain the upstream **CC BY-SA** terms stated in that culture's `description.md`; they are separate from the MIT application code. Changes: selected existing stars with usable distances, translated source asterism labels and numeric suffixes, combined aliases, and added common Polaris names. Full provenance: `/data/chinese-star-names-source.json`.
+
+## 新增深空照片与黑洞射电图像
+
+| 本地素材 | 原始观测与署名 |
+| --- | --- |
+| `carina.jpg` | [ESA/Hubble opo1212e](https://esahubble.org/images/opo1212e/) — NOAO, AURA, NSF, N. Smith (University of Arizona) |
+| `helix.jpg` | [ESO helix](https://www.eso.org/public/images/helix/) — ESO |
+| `whirlpool.jpg` | [ESA/Hubble heic0506a](https://esahubble.org/images/heic0506a/) — NASA, ESA, S. Beckwith (STScI), Hubble Heritage Team (STScI/AURA) |
+| `molten-ring.jpg` | [ESA/Hubble potw2050a](https://esahubble.org/images/potw2050a/) — ESA/Hubble & NASA, S. Jha; acknowledgement: L. Shatz |
+| `sgr-a-eht.jpg` | [ESO eso2208-eht-mwa](https://www.eso.org/public/images/eso2208-eht-mwa/) — EHT Collaboration |
+| `m87-eht.jpg` | [ESO eso1907a](https://www.eso.org/public/images/eso1907a/) — EHT Collaboration |
+
+素材位于 `public/deep-sky/`。遵循 [ESA/Hubble 图像使用条款](https://esahubble.org/copyright/) 和 [ESO 图像使用条款](https://www.eso.org/public/outreach/copyright/) 的 CC BY 4.0 与署名要求。EHT 图像保留 EHT Collaboration 署名。文件未重绘；网页显示时会缩放、融合背景并调整显示色彩。完整图像元数据见 `public/data/deep-sky-expansion.json`；EHT 图只在资料卡中作为射电图像展示。

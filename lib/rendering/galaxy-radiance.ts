@@ -1,9 +1,10 @@
+import { lensedBackgroundDirection, type LensView } from '../physics/gravitational-lensing.ts';
 import type { Vector3 } from "../physics/vector.ts";
 import type { ObservationMode, ViewCamera } from "./contracts.ts";
 import { createCameraBasis } from "./projection.ts";
 
 const SOLAR_RADIUS_PARSEC = 8_277;
-const BAR_ANGLE_RADIANS = (27 * Math.PI) / 180;
+export const BAR_ANGLE_RADIANS = (27 * Math.PI) / 180;
 const VISUAL_EXTINCTION_PER_PARSEC_AT_SOLAR_MIDPLANE = 0.00072;
 const RAY_LENGTH_PARSEC = 32_000;
 const RADIANCE_SEGMENTS = 96;
@@ -28,7 +29,7 @@ export interface GalaxyRadianceResult {
 const clamp = (value: number, minimum: number, maximum: number) =>
   Math.min(maximum, Math.max(minimum, value));
 
-function spiralArmField(radiusParsec: number, azimuthRadians: number): number {
+export function spiralArmField(radiusParsec: number, azimuthRadians: number): number {
   if (radiusParsec < 2400 || radiusParsec > 17000) return 0;
   const basePhase = 0.28 + Math.log(radiusParsec / SOLAR_RADIUS_PARSEC) / Math.tan(12.5 * Math.PI / 180);
   let response = 0;
@@ -458,6 +459,7 @@ export function projectGalacticAllSkyPixelsToView(
   camera: ViewCamera,
   viewWidth: number,
   viewHeight: number,
+  lens: LensView | null = null,
 ): Uint8ClampedArray {
   const viewPixels = new Uint8ClampedArray(viewWidth * viewHeight * 4);
   const basis = createCameraBasis(camera);
@@ -487,8 +489,10 @@ export function projectGalacticAllSkyPixelsToView(
           cameraX * basis.right.z +
           cameraY * basis.up.z) /
         directionLength;
-      const longitudeRadians = Math.atan2(directionY, directionX);
-      const latitudeRadians = Math.asin(clamp(directionZ, -1, 1));
+      const direction=lensedBackgroundDirection({x:directionX,y:directionY,z:directionZ},lens);
+      if(!direction){viewPixels[(y*viewWidth+x)*4+3]=255;continue;}
+      const longitudeRadians = Math.atan2(direction.y, direction.x);
+      const latitudeRadians = Math.asin(clamp(direction.z, -1, 1));
       const sourceX =
         ((longitudeRadians + Math.PI) / (2 * Math.PI)) * allSkyWidth - 0.5;
       const sourceY =

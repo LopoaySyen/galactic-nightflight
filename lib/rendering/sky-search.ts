@@ -1,7 +1,8 @@
 import type {PointSourceSample} from './contracts.ts';
 import {starName,starAliases} from './star-identities.ts';
 import {deepSkyTargets} from './sky-object-catalog.ts';
-export interface SkySearchEntry {id:string;kind:'star'|'deep-sky';title:string;subtitle:string;titleEn?:string;subtitleEn?:string;terms:string[];priority:number}
+import {compactObjects} from './compact-object-catalog.ts';
+export interface SkySearchEntry {id:string;kind:'star'|'deep-sky'|'compact';title:string;subtitle:string;titleEn?:string;subtitleEn?:string;terms:string[];priority:number}
 const normalize=(value:string)=>value.normalize('NFKC').toLocaleLowerCase('en').replace(/[\s\-_·]+/g,'');
 
 /** Index only catalogue-backed objects, never procedural stars or pixels inside photos. */
@@ -25,8 +26,10 @@ export function buildSkySearchIndex(stars:readonly PointSourceSample[]):SkySearc
       subtitle:[source.displayName&&source.displayName!==title?source.displayName:'实测恒星',hip?`依巴谷 ${hip}`:hd?`亨利·德雷珀 ${hd}`:data.catalog==='nearby-simbad'?'SIMBAD · 近邻恒星':'本地样本序号'].filter(Boolean).join(' · '),
       terms:[...new Set(terms.filter(Boolean).map(normalize))],priority:source.displayName?data.referenceApparentMagnitude:100+data.referenceApparentMagnitude});
   }
-  for(const target of deepSkyTargets)entries.push({id:target.id,kind:'deep-sky',title:target.name,subtitle:target.kind,
+  for(const target of deepSkyTargets)entries.push({id:target.id,kind:'deep-sky',title:target.name,titleEn:target.nameEn,subtitle:target.kind,
     terms:[...new Set([target.name,...target.aliases].map(normalize))],priority:20});
+  for(const object of compactObjects)entries.push({id:object.id,kind:'compact',title:object.name,titleEn:object.nameEn,subtitle:'黑洞',subtitleEn:'Black hole',
+    terms:[object.name,object.nameEn,'黑洞','black hole',...object.aliases].map(normalize),priority:18});
   return entries;
 }
 export function searchSkyObjects(index:readonly SkySearchEntry[],query:string,limit=12):SkySearchEntry[]{

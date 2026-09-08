@@ -32,6 +32,8 @@ export interface PointSourceSample {
   displayName?: string;
   sourceCatalog?: string;
   referenceVisualExtinctionMagnitude?: number;
+  /** Blend the local, magnitude-selected catalogue out beyond the solar neighbourhood. */
+  solarNeighbourhoodOnly?: boolean;
   observedData?: {
     catalog: "yale-hipparcos" | "gaia-dr3" | "nearby-simbad";
     sourceUrl?: string;
