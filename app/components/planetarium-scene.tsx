@@ -40,6 +40,7 @@ import {
 import { modelPopulationEmitters } from "@/lib/rendering/model-star-catalog";
 import { parseObservedBrightStarCatalog } from "@/lib/rendering/observed-star-catalog";
 import { parseGaiaBrightStarCatalog } from "@/lib/rendering/gaia-bright-star-catalog";
+import { includeNearbyStars, nearbyStars } from "@/lib/rendering/nearby-star-catalog";
 import {
   altitudeFromSkyDirection,
   applyAtmosphereToViewPixels,
@@ -275,9 +276,10 @@ function PlanetariumView() {
   });
   const [isMapDragging, setIsMapDragging] = useState(false);
   const [isPositionScrubbing, setIsPositionScrubbing] = useState(false);
+  const observedStars = useMemo(() => includeNearbyStars([...observedBrightStars, ...gaiaBrightStars]), [observedBrightStars, gaiaBrightStars]);
   const galaxyPointSources = useMemo(
-    () => [...observedBrightStars, ...gaiaBrightStars, ...modelPopulationEmitters],
-    [gaiaBrightStars, observedBrightStars],
+    () => [...observedStars, ...modelPopulationEmitters],
+    [observedStars],
   );
   const { result: skyComputation, points: skyPoints, state: computeState } = useSkyComputation(
     galaxyPointSources, observerPositionParsec, simulationTimeYears, observationMode,
@@ -285,8 +287,8 @@ function PlanetariumView() {
   );
   const preparedGalaxyPointSources = skyPoints?.sources;
   const preparedExtragalacticSources = skyPoints?.galaxies;
-  const observedStarsById = useMemo(() => new Map([...observedBrightStars, ...gaiaBrightStars].map(source => [source.id, source])), [observedBrightStars, gaiaBrightStars]);
-  const searchIndex=useMemo(()=>buildSkySearchIndex([...observedBrightStars,...gaiaBrightStars]),[observedBrightStars,gaiaBrightStars]);
+  const observedStarsById = useMemo(() => new Map(observedStars.map(source => [source.id, source])), [observedStars]);
+  const searchIndex=useMemo(()=>buildSkySearchIndex(observedStars),[observedStars]);
   const selectedStar = selectedStarId ? observedStarsById.get(selectedStarId) : undefined;
   const namedPreparedStars = useMemo(() => (preparedGalaxyPointSources ?? []).filter(source =>
     source.role === "observed-bright-star" && source.displayName), [preparedGalaxyPointSources]);
@@ -544,7 +546,7 @@ function PlanetariumView() {
   );
   const observerMapPoint = mapPoint(observerPositionParsec);
   const sunMapPoint = mapPoint({ x: SOLAR_X_PARSEC, y: 0, z: 0 });
-  const observedCatalogueCount = observedBrightStars.length + gaiaBrightStars.length;
+  const observedCatalogueCount = observedStars.length;
   const viewArrowEnd = useMemo(() => {
     const radians = degreesToRadians(camera.azimuthDegrees);
     return {
@@ -1473,6 +1475,7 @@ function PlanetariumView() {
             <div className="panel-heading"><div><span>{t("科学状态")}</span><h2>{t("物理与数据来源")}</h2></div><button type="button" onClick={() => setActivePanel(null)} aria-label={t("关闭物理状态")}>×</button></div>
             <div className="physics-state-card is-prediction"><i aria-hidden="true" /><div><strong>{t("观测约束下的模型预测")}</strong><p>{t("当前画面不是空白占位，也不声称是完整真值。实测星点与模型推断分别标记；三维恒星密度和尘埃决定银河带的亮度、宽度与暗带。新增的小尺度尘埃起伏是固定三维统计模型，不是已观测云团的位置。")}</p></div></div>
             <div className="data-layer-list">
+              <div><i className="observed" /><span><strong>{language==='en'?'Nearby stellar supplement':'近邻恒星补充'}</strong><small>{language==='en'?`${nearbyStars.length} SIMBAD entries within 10 pc, including Proxima Centauri and Barnard’s Star. Adds faint neighbours and enriches overlapping Gaia entries without drawing them twice; this is not a complete census.`:`SIMBAD 补充太阳周围 10 秒差距内的 ${nearbyStars.length} 条恒星资料，包含比邻星和巴纳德星。补入暗弱近邻，并合并已有 Gaia 记录；这仍不是完整近邻星表。`}</small></span></div>
               <div><i className="observed" /><span><strong>{t("直接观测")}</strong><small>{t("耶鲁亮星表补足 6.5 星等以内的最亮恒星；Gaia 第三批数据提供 6.5 至 8.5 星等（表示从观测位置看到的亮度，数值越小越亮）的恒星，具备完整六维相空间的 ")}{gaiaCatalogueState === "ready" ? t(`${gaiaBrightStars.length.toLocaleString(locale)} 颗恒星`) : gaiaCatalogueState === "loading" ? t("载入中") : t("载入失败")}{t("。六维相空间表示三个位置分量与三个速度分量。")}</small></span></div>
               <div><i className="inferred" /><span><strong>{t("模型推断")}</strong><small>{modelPopulationEmitters.length.toLocaleString(locale)}{t(" 个恒星族群示踪点；银河盘、厚盘、棒、核球与核星盘连续辐射场。")}</small></span></div>
               <div><i className="observed" /><span><strong>{t("银河系外天体")}</strong><small>{cataloguedExtragalacticSources.length}{t(" 个有目录约束的近邻星系，加上 ")}{statisticalBackgroundGalaxies.length.toLocaleString(locale)}{t(" 个统计背景星系；距离、角大小和银河尘埃随视点重算。")}</small></span></div>

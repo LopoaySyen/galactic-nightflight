@@ -21,8 +21,8 @@ export function buildSkySearchIndex(stars:readonly PointSourceSample[]):SkySearc
     // Gaia source IDs are absent in this bundle; do not pretend local row numbers are official IDs.
     if(localSample)terms.push(`盖亚样本 ${localSample}`,`Gaia sample ${localSample}`);
     entries.push({id:source.id,kind:'star',title,titleEn:source.displayName??(hip?`HIP ${hip}`:hd?`HD ${hd}`:`Gaia sample ${localSample}`),
-      subtitleEn:hip?`HIP ${hip}`:hd?`HD ${hd}`:'Local sample identifier',
-      subtitle:[source.displayName&&source.displayName!==title?source.displayName:'实测恒星',hip?`依巴谷 ${hip}`:hd?`亨利·德雷珀 ${hd}`:'本地样本序号'].filter(Boolean).join(' · '),
+      subtitleEn:hip?`HIP ${hip}`:hd?`HD ${hd}`:data.catalog==='nearby-simbad'?'SIMBAD · Nearby star':'Local sample identifier',
+      subtitle:[source.displayName&&source.displayName!==title?source.displayName:'实测恒星',hip?`依巴谷 ${hip}`:hd?`亨利·德雷珀 ${hd}`:data.catalog==='nearby-simbad'?'SIMBAD · 近邻恒星':'本地样本序号'].filter(Boolean).join(' · '),
       terms:[...new Set(terms.filter(Boolean).map(normalize))],priority:source.displayName?data.referenceApparentMagnitude:100+data.referenceApparentMagnitude});
   }
   for(const target of deepSkyTargets)entries.push({id:target.id,kind:'deep-sky',title:target.name,subtitle:target.kind,

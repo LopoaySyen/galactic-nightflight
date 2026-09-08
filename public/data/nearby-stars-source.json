@@ -1,0 +1,15 @@
+{
+  "title": "SIMBAD nearby stellar supplement",
+  "retrieved": "2026-09-08",
+  "source": "https://simbad.cds.unistra.fr/",
+  "tapEndpoint": "https://simbad.cds.unistra.fr/simbad/sim-tap/sync",
+  "query": "SELECT b.oid, b.main_id, b.ra, b.dec, b.plx_value, b.pmra, b.pmdec, b.rvz_radvel, b.sp_type, b.otype, f.V, f.B, f.G, i.ids FROM basic AS b JOIN allfluxes AS f ON b.oid = f.oidref JOIN ids AS i ON b.oid = i.oidref WHERE b.plx_value >= 100 AND f.V IS NOT NULL ORDER BY plx_value DESC",
+  "selection": "Within 10 pc by positive measured parallax, with V and B photometry and complete proper motion and radial velocity. Excludes SIMBAD types **, SB*, Pl and Pl?, and HIP entries already in the bundled Yale catalogue. This is a supplemental sample, not a complete census of nearby stars or multiple systems.",
+  "counts": {"queryRows": 267, "supplementRecords": 144, "enrichedGaiaRows": 25, "additionalStars": 119},
+  "coordinates": "ICRS positions at J2000 as supplied by SIMBAD. Distance = 1000 / parallax in mas. Galactic position is relative to the reference Sun (-8277, 0, 0) pc. Proper motion in RA already includes cos(dec). Convert proper motions and radial velocity to Galactic velocity, then add the same solar velocity (11.1, 244.24, 7.25) km/s used by the bundled Gaia importer.",
+  "photometry": "V magnitudes are retained; B-V gives an approximate rendering colour temperature, not a measured effective temperature. The colour approximation is particularly limited for late red dwarfs and white dwarfs. Search remains independent of naked-eye visibility.",
+  "deduplication": "Retain existing Yale HIP records. Match Gaia rows only when 3D separation is below 0.003 pc and G magnitude differs by less than 0.01 mag; reject ambiguous matches. This tolerates float32 Galactic positions and the J2016/J2000 epoch difference. Store matched local Gaia row IDs only as replacement references, never as official Gaia source IDs.",
+  "identifiers": "HIP, HD, GJ, LHS, Ross, Wolf and official Gaia DR3 identifiers come from SIMBAD aliases and remain strings. Familiar Chinese names and their transliterations are editorial search labels; they are not claimed as SIMBAD-provided Chinese names.",
+  "rebuild": "Fetch the TAP query as JSON, then run node scripts/build-nearby-star-catalog.mjs <downloaded-json-path> from the project root.",
+  "proxima": "https://simbad.cds.unistra.fr/simbad/sim-basic?Ident=Proxima+Centauri"
+}

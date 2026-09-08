@@ -33,7 +33,8 @@ export interface PointSourceSample {
   sourceCatalog?: string;
   referenceVisualExtinctionMagnitude?: number;
   observedData?: {
-    catalog: "yale-hipparcos" | "gaia-dr3";
+    catalog: "yale-hipparcos" | "gaia-dr3" | "nearby-simbad";
+    sourceUrl?: string;
     catalogueIdentifier?: string;
     henryDraperIdentifier?: string;
     rightAscensionDegrees?: number;

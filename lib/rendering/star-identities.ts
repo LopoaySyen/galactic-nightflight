@@ -1,7 +1,9 @@
 import names from '../../public/data/chinese-star-names.json' with { type: 'json' };
+import nearbyNames from '../../public/data/nearby-stars.json' with { type: 'json' };
 
 type StellarNames = { zh: string; en: string; aliases: string[] };
 const identities = names as Record<string, StellarNames>;
+const nearbyIdentities = new Map<string, StellarNames>(nearbyNames.map(record => [record.id, record]));
 export const commonStarNames: Record<string,string> = {
   'Rigil Kentaurus':'南门二 A', Toliman:'南门二 B', Procyon:'南河三', Polaris:'勾陈一',
   Sirius:'天狼星', Canopus:'老人星', Arcturus:'大角星', Vega:'织女星', Capella:'五车二',
@@ -10,7 +12,7 @@ export const commonStarNames: Record<string,string> = {
 };
 
 export function starIdentity(id?: string): StellarNames | undefined {
-  return id?.startsWith('hip-') ? identities[id.slice(4)] : undefined;
+  return id ? nearbyIdentities.get(id) ?? (id.startsWith('hip-') ? identities[id.slice(4)] : undefined) : undefined;
 }
 export function starName(name?: string, language: 'zh'|'en' = 'zh', id?: string): string {
   const identity = starIdentity(id);

@@ -32,6 +32,6 @@ export function SkySearch({index,loading,failed,onSelect,onClose}:{index:readonl
       </button></li>)}
     </ul>
     {!results.length&&!pending&&<p className="sky-search-empty">{t("没有找到这个天体。试试完整名称或星表编号；本网站目前只搜索已载入的目录。")}</p>}
-    <details className="sky-search-help"><summary>{t("支持哪些编号？")}</summary><p>{t("依巴谷星表编号可以写成“依巴谷 32349”或“HIP 32349”；亨利·德雷珀星表编号可以写成“HD 48915”。这些字母是星表的简称，后面的数字用于识别恒星，不表示亮度或距离。")}</p><p>{t("盖亚数据没有保存官方恒星编号，只能用本地的“盖亚样本 123”等写法查找。也支持星云、星团与星系的名称及梅西耶目录写法，例如猎户座大星云的 M42。")}</p></details>
+    <details className="sky-search-help"><summary>{t("支持哪些编号？")}</summary><p>{t("依巴谷星表编号可以写成“依巴谷 32349”或“HIP 32349”；亨利·德雷珀星表编号可以写成“HD 48915”。这些字母是星表的简称，后面的数字用于识别恒星，不表示亮度或距离。")}</p><p>{language==='en'?'Nearby stars also support names such as Proxima Centauri and identifiers such as GJ 551. Official Gaia DR3 identifiers are searchable where supplied by SIMBAD. The remaining Gaia sample uses local row labels, such as Gaia sample 123. Nebulae, clusters and galaxies also support names and Messier numbers such as M42.':'近邻恒星还支持“比邻星”“Proxima Centauri”和“GJ 551”等写法。SIMBAD 已提供的官方 Gaia DR3 编号也可查询；其余 Gaia 样本仍使用“盖亚样本 123”等本地序号。星云、星团与星系支持名称和梅西耶编号，例如 M42。'}</p></details>
   </section>;
 }
