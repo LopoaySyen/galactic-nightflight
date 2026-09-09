@@ -36,7 +36,7 @@ export function drawObservedStarLabels(context:CanvasRenderingContext2D,sources:
   pixelRatio:number,width:number,height:number,zenith:Vector3,atmosphere:AtmospherePreset,mode:ObservationMode,sunAltitude:number,language:'zh'|'en'='zh'):void {
   const visible=sources.filter(source=>source.role==='observed-bright-star'&&source.displayName&&Number.isFinite(source.canvasX)&&Number.isFinite(source.canvasY))
     .map(source=>({source,magnitude:observedStarMagnitude(source,zenith,atmosphere,mode,sunAltitude)}))
-    .filter(item=>Number.isFinite(item.magnitude)&&item.magnitude<=Math.min(5,starMagnitudeLimit(mode)))
+    .filter(item=>Number.isFinite(item.magnitude)&&item.magnitude<=Math.min(item.source.id==='sun'?Infinity:5,starMagnitudeLimit(mode)))
     .sort((a,b)=>a.magnitude-b.magnitude);
   const occupied:Array<{x:number;y:number;width:number;height:number}>=[];
   context.save();

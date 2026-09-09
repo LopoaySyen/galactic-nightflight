@@ -2,6 +2,7 @@ import records from '../../public/data/nearby-stars.json' with { type: 'json' };
 import type { PointSourceSample } from './contracts.ts';
 import { equatorialDirectionToGalactic } from './observed-star-catalog.ts';
 import { integrateVisualExtinctionMagnitude } from './galaxy-radiance.ts';
+import {sunStar} from './solar-star.ts';
 
 const sun = { x: -8277, y: 0, z: 0 };
 const sunVelocity = { x: 11.1, y: 244.24, z: 7.25 };
@@ -47,5 +48,5 @@ const replacedIds = new Set(records.flatMap(record => [record.id, ...(record.rep
 
 /** Share one merged catalogue between rendering, lookup and selection. */
 export function includeNearbyStars(stars: readonly PointSourceSample[]): PointSourceSample[] {
-  return [...stars.filter(star => !replacedIds.has(star.id)), ...nearbyStars];
+  return [...stars.filter(star => !replacedIds.has(star.id)&&star.id!==sunStar.id), ...nearbyStars,sunStar];
 }

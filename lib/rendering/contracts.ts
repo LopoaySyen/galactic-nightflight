@@ -35,7 +35,7 @@ export interface PointSourceSample {
   /** Blend the local, magnitude-selected catalogue out beyond the solar neighbourhood. */
   solarNeighbourhoodOnly?: boolean;
   observedData?: {
-    catalog: "yale-hipparcos" | "gaia-dr3" | "nearby-simbad";
+    catalog: "yale-hipparcos" | "gaia-dr3" | "nearby-simbad" | "solar-reference";
     sourceUrl?: string;
     catalogueIdentifier?: string;
     henryDraperIdentifier?: string;
@@ -44,7 +44,7 @@ export interface PointSourceSample {
     referenceDistanceParsec: number;
     referenceApparentMagnitude: number;
     spectralType?: string;
-    temperatureMethod: "colour-estimate" | "catalogue-or-colour";
+    temperatureMethod: "colour-estimate" | "catalogue-or-colour" | "reference-value";
     measuredVelocity: boolean;
   };
 }

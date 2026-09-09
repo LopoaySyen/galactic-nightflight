@@ -58,7 +58,7 @@ test('the same catalogue feeds rendering and search without duplicating nearby G
   const bytes=await readFile(new URL('../public/data/gaia-dr3-bright-6d.bin',import.meta.url));
   const gaia=parseGaiaBrightStarCatalog(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
   const original=[...yale,...gaia], merged=includeNearbyStars(original);
-  assert.equal(merged.length,original.length+119);
+  assert.equal(merged.length,original.length+120);
   assert.equal(new Set(merged.map(star=>star.id)).size,merged.length);
   assert.equal(includeNearbyStars(merged).length,merged.length);
   for(const record of records.filter(record=>record.replacesGaiaId)) {

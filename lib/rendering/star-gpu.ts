@@ -22,7 +22,8 @@ ${scintillationGlsl}
 ${pointLensGlsl}
 void main() {
   vec3 relative = position + velocity * elapsedYears * 0.000001022712165 - observerOffset;
-  float distance = max(length(relative), 0.000001);
+  float actualDistance=length(relative);
+  float distance = max(actualDistance, 0.000001);
   vec3 direction = relative / distance;
   float lensedMagnitude = magnitude;
   bool lensVisible = applyPointLens(direction,distance,lensedMagnitude);
@@ -40,7 +41,7 @@ void main() {
   float limit = mode < 0.5 ? 6.2 : mode < 1.5 ? 7.1 : mode < 2.5 ? 12.4 : 12.0;
   vec2 screen = vec2(dot(direction,cameraRight),dot(direction,cameraUp))/(max(front,0.00001)*tangentFov);
   if(allSky>.5)screen=vec2(atan(direction.y,direction.x)/3.141592653589793,asin(clamp(direction.z,-1.0,1.0))/1.5707963267948966);
-  if (!lensVisible || (allSky<.5&&front<=0.0) || apparent > limit || (distanceCut>0.0&&distance>distanceCut) || (distanceCut<0.0&&distance<=-distanceCut) || (atmosphere > 0.5 && altitude <= 0.0) || abs(screen.x)>1.05 || abs(screen.y)>1.05) {
+  if (actualDistance<=1e-8 || !lensVisible || (allSky<.5&&front<=0.0) || apparent > limit || (distanceCut>0.0&&distance>distanceCut) || (distanceCut<0.0&&distance<=-distanceCut) || (atmosphere > 0.5 && altitude <= 0.0) || abs(screen.x)>1.05 || abs(screen.y)>1.05) {
     gl_Position=vec4(3.0,3.0,0.0,1.0); gl_PointSize=1.0; signal=0.0; starColour=vec3(0.0); diameter=1.0; return;
   }
   float gain = mode < 0.5 ? 105.0 : mode < 1.5 ? 155.0 : mode < 2.5 ? 420.0 : 360.0;

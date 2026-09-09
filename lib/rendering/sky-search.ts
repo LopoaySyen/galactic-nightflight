@@ -13,6 +13,10 @@ export function buildSkySearchIndex(stars:readonly PointSourceSample[]):SkySearc
     const data=source.observedData;
     if(source.role!=='observed-bright-star'||!data||seen.has(source.id))continue;
     seen.add(source.id);
+    if(data.catalog==='solar-reference'){
+      entries.push({id:source.id,kind:'star',title:'太阳',titleEn:'Sun',subtitle:'Sun · 太阳系的恒星',subtitleEn:'Sol · Our Solar System’s star',
+        terms:starAliases(source.id,source.displayName).map(normalize),priority:-26.74});continue;
+    }
     const hip=data.catalogueIdentifier,hd=data.henryDraperIdentifier;
     const localSample=data.catalog==='gaia-dr3'?source.id.replace('gaia-dr3-bright-',''):undefined;
     const title=source.displayName?starName(source.displayName,'zh',source.id):hip?`依巴谷 ${hip}`:hd?`亨利·德雷珀 ${hd}`:`盖亚样本 ${localSample}`;

@@ -1,5 +1,6 @@
 import names from '../../public/data/chinese-star-names.json' with { type: 'json' };
 import nearbyNames from '../../public/data/nearby-stars.json' with { type: 'json' };
+import {solarNames} from './solar-star.ts';
 
 type StellarNames = { zh: string; en: string; aliases: string[] };
 const identities = names as Record<string, StellarNames>;
@@ -12,6 +13,7 @@ export const commonStarNames: Record<string,string> = {
 };
 
 export function starIdentity(id?: string): StellarNames | undefined {
+  if(id==='sun')return solarNames;
   return id ? nearbyIdentities.get(id) ?? (id.startsWith('hip-') ? identities[id.slice(4)] : undefined) : undefined;
 }
 export function starName(name?: string, language: 'zh'|'en' = 'zh', id?: string): string {
