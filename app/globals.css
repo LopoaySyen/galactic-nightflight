@@ -1819,3 +1819,15 @@ body:has(.nf-home) {height:auto;min-height:100vh;overflow:visible;}
 .black-hole-views [aria-pressed="true"] {background:#233345;border-color:#8199ae;color:#eef6ff;}
 .black-hole-model {margin-top:18px;border-top:1px solid #24303c;padding-top:14px;}
 .black-hole-model summary {cursor:pointer;color:#aebfcd;font-size:12px;}
+
+.earth-observer-controls {margin:12px 0 20px;padding:14px;border:1px solid #e7c58238;border-radius:12px;background:#e7c58208;}
+.earth-observer-controls h3 {margin:0 0 12px;font-size:16px;color:#f5dfaf;}
+.earth-observer-controls label {display:grid;gap:5px;font-size:12px;}
+.earth-observer-controls input,.earth-time-console select {min-width:0;width:100%;border:1px solid #96b7d644;border-radius:6px;padding:7px 5px;background:#121e2a;color:#e7f0fa;color-scheme:dark;}
+.earth-coordinate-inputs {display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;}
+.earth-clock-actions {display:flex;gap:8px;}
+.earth-clock-actions button {flex:1;padding:6px 8px;border:1px solid #e7c58244;border-radius:6px;background:#e7c5820c;color:#f5dfaf;cursor:pointer;}
+.earth-time-console {flex-wrap:wrap;max-width:calc(100vw - 24px);}
+.earth-time-console label {display:flex;align-items:center;gap:8px;font-size:12px;}
+.earth-time-console select {width:auto;}
+.earth-time-console time {font-size:12px;color:#d8e5f3;}

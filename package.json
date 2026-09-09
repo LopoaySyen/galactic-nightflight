@@ -17,6 +17,7 @@
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {
+    "astronomy-engine": "2.1.19",
     "next": "16.2.6",
     "react": "19.2.6",
     "react-dom": "19.2.6"

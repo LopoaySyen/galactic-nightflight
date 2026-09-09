@@ -1,4 +1,5 @@
 import type { ViewCamera } from "./contracts.ts";
+import {planetaryFrame, type LocalFrame} from './local-frame.ts';
 import { createCameraBasis } from "./projection.ts";
 
 // Only projects existing landscape assets. No astronomical light is painted
@@ -8,15 +9,15 @@ void main() { gl_Position = vec4(position, 0.0, 1.0); }`;
 const fragmentSource = `precision highp float;
 uniform vec2 resolution;
 uniform vec3 forward, cameraRight, cameraUp;
-uniform float tangentHalfFov, inclination, daylight, exposure;
+uniform float tangentHalfFov, daylight, exposure;
+uniform vec3 localX, localY, zenith;
 uniform sampler2D panorama, ground;
 const float pi = 3.141592653589793;
 void main() {
   vec2 screen = gl_FragCoord.xy / resolution * 2.0 - 1.0;
   vec3 ray = normalize(forward + cameraRight * screen.x * tangentHalfFov +
     cameraUp * screen.y * tangentHalfFov * resolution.y / resolution.x);
-  float c = cos(inclination), s = sin(inclination);
-  vec3 localRay = vec3(c * ray.x - s * ray.z, ray.y, s * ray.x + c * ray.z);
+  vec3 localRay = vec3(dot(ray,localX),dot(ray,localY),dot(ray,zenith));
   float longitude = atan(localRay.y, localRay.x);
   float latitude = asin(clamp(localRay.z, -1.0, 1.0));
   vec4 distant = texture2D(panorama, vec2(fract(longitude / (2.0*pi) + 0.5), 0.5 - latitude/pi));
@@ -38,7 +39,7 @@ void main() {
 
 export interface TerrainGpuRenderer {
   canvas: HTMLCanvasElement;
-  render(camera: ViewCamera, width: number, height: number, inclination: number, daylight: number, exposure: number): boolean;
+  render(camera: ViewCamera, width: number, height: number, inclination: number, daylight: number, exposure: number, frame?: LocalFrame): boolean;
   dispose(): void;
 }
 
@@ -73,7 +74,7 @@ export function createTerrainGpuRenderer(panorama: HTMLImageElement, ground: HTM
   const attribute = gl.getAttribLocation(program, "position");
   gl.enableVertexAttribArray(attribute);
   gl.vertexAttribPointer(attribute, 2, gl.FLOAT, false, 0, 0);
-  const uniforms = Object.fromEntries(["resolution","forward","cameraRight","cameraUp","tangentHalfFov","inclination","daylight","exposure","panorama","ground"].map(name => [name, gl.getUniformLocation(program, name)]));
+  const uniforms = Object.fromEntries(["resolution","forward","cameraRight","cameraUp","tangentHalfFov","localX","localY","zenith","daylight","exposure","panorama","ground"].map(name => [name, gl.getUniformLocation(program, name)]));
   const textures: WebGLTexture[] = [];
   for (const [unit, asset] of [panorama, ground].entries()) {
     const texture = gl.createTexture()!;
@@ -96,7 +97,7 @@ export function createTerrainGpuRenderer(panorama: HTMLImageElement, ground: HTM
   }
   return {
     canvas,
-    render(camera, width, height, inclination, daylight, exposure) {
+    render(camera, width, height, inclination, daylight, exposure, frame=planetaryFrame(inclination)) {
       if (gl.isContextLost()) return false;
       if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
       gl.viewport(0, 0, width, height);
@@ -105,7 +106,7 @@ export function createTerrainGpuRenderer(panorama: HTMLImageElement, ground: HTM
       gl.uniform2f(uniforms.resolution, width, height);
       for (const [name, vector] of [["forward",basis.forward],["cameraRight",basis.right],["cameraUp",basis.up]] as const) gl.uniform3f(uniforms[name], vector.x, vector.y, vector.z);
       gl.uniform1f(uniforms.tangentHalfFov, Math.tan(camera.horizontalFieldOfViewDegrees * Math.PI / 360));
-      gl.uniform1f(uniforms.inclination, inclination * Math.PI / 180);
+      for (const [name,v] of [["localX",frame.xAxis],["localY",frame.yAxis],["zenith",frame.zenith]] as const) gl.uniform3f(uniforms[name],v.x,v.y,v.z);
       gl.uniform1f(uniforms.daylight, daylight);
       gl.uniform1f(uniforms.exposure, exposure);
       gl.drawArrays(gl.TRIANGLES, 0, 6);

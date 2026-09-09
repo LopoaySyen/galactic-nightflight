@@ -2,7 +2,7 @@ import { deepSkyImageSources, type DeepSkyImageSource } from './deep-sky-image-c
 import { cataloguedExtragalacticSources, type ExtragalacticSource } from './extragalactic-catalog.ts';
 import type {ViewCamera} from './contracts.ts';
 import {createCameraBasis} from './projection.ts';
-import {galacticToLocal} from './local-frame.ts';
+import {galacticToFrame,planetaryFrame,type LocalFrame} from './local-frame.ts';
 import type { Vector3 } from '../physics/vector.ts';
 
 export interface DeepSkyTarget {
@@ -65,11 +65,11 @@ export function pickDeepSkyTarget(areas:readonly DeepSkyHitArea[],x:number,y:num
 
 /** Query the same planetary horizon and panorama alpha as the visible ground. */
 export function isSkyPointObscured(camera:ViewCamera,width:number,height:number,x:number,y:number,inclination:number,
-  panorama?:{width:number;height:number;pixels:Uint8ClampedArray}|null):boolean {
+  panorama?:{width:number;height:number;pixels:Uint8ClampedArray}|null,frame:LocalFrame=planetaryFrame(inclination)):boolean {
   const basis=createCameraBasis(camera),tangent=Math.tan(camera.horizontalFieldOfViewDegrees*Math.PI/360);
   const cx=(2*x/width-1)*tangent,cy=(1-2*y/height)*tangent*height/width,length=Math.hypot(1,cx,cy);
-  const ray=galacticToLocal({x:(basis.forward.x+cx*basis.right.x+cy*basis.up.x)/length,
-    y:(basis.forward.y+cx*basis.right.y+cy*basis.up.y)/length,z:(basis.forward.z+cx*basis.right.z+cy*basis.up.z)/length},inclination);
+  const ray=galacticToFrame({x:(basis.forward.x+cx*basis.right.x+cy*basis.up.x)/length,
+    y:(basis.forward.y+cx*basis.right.y+cy*basis.up.y)/length,z:(basis.forward.z+cx*basis.right.z+cy*basis.up.z)/length},frame);
   if(ray.z<0)return true;
   if(!panorama)return false;
   const u=Math.atan2(ray.y,ray.x)/(2*Math.PI)+.5,v=.5-Math.asin(Math.max(-1,Math.min(1,ray.z)))/Math.PI;

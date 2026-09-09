@@ -1,6 +1,6 @@
 import type { ViewCamera } from "./contracts.ts";
 import { createCameraBasis } from "./projection.ts";
-import { galacticToLocal } from "./local-frame.ts";
+import { galacticToFrame, planetaryFrame, type LocalFrame } from "./local-frame.ts";
 
 export interface GroundTextureRaster {
   pixels: Uint8ClampedArray;
@@ -105,7 +105,7 @@ export function projectGroundTexturePixels(
 export function projectPlanetTerrainPixels(
   panorama: GroundTextureRaster, ground: GroundTextureRaster, camera: ViewCamera,
   width: number, height: number, inclinationDegrees: number, daylight: number,
-  exposureStops = 0,
+  exposureStops = 0, frame:LocalFrame=planetaryFrame(inclinationDegrees),
 ): Uint8ClampedArray {
   const pixels = new Uint8ClampedArray(width * height * 4);
   const basis = createCameraBasis(camera);
@@ -132,11 +132,11 @@ export function projectPlanetTerrainPixels(
     const cx = (2*(x+0.5)/width-1)*tangent;
     const cy = (1-2*(y+0.5)/height)*tangent*height/width;
     const length = Math.hypot(1,cx,cy);
-    const ray = galacticToLocal({
+    const ray = galacticToFrame({
       x: (basis.forward.x+cx*basis.right.x+cy*basis.up.x)/length,
       y: (basis.forward.y+cx*basis.right.y+cy*basis.up.y)/length,
       z: (basis.forward.z+cx*basis.right.z+cy*basis.up.z)/length,
-    }, inclinationDegrees);
+    }, frame);
     const distant = sample(panorama, Math.atan2(ray.y,ray.x)/(2*Math.PI)+0.5,
       0.5-Math.asin(clamp(ray.z,-1,1))/Math.PI, false);
     const base = ray.z < 0 ? [0.002+0.078*daylight,0.004+0.091*daylight,0.007+0.103*daylight] : [0,0,0];
