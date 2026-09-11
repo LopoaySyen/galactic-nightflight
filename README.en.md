@@ -6,13 +6,11 @@
 
 # Galactic Nightflight
 
-**银河夜航**
-
 ### One galaxy. Countless skies.
 
 What would the stars look like from a planet elsewhere in the Milky Way?
 
-**[Visit the website](https://nightflight.xelope.fun/en) · [Open the observatory](https://nightflight.xelope.fun/observe?lang=en) · [中文](README.md)**
+**[Visit the website](https://nightflight.xelope.fun/en) · [Open the observatory](https://nightflight.xelope.fun/observe?lang=en) · [Chinese](README.md)**
 
 In your browser · Three-dimensional travel · Observed catalogues and models · MIT licensed
 
@@ -38,14 +36,14 @@ Observed data, statistical models and artistic assets are identified separately.
 | --- | --- |
 | **[nightflight.xelope.fun](https://nightflight.xelope.fun/)** | Chinese homepage, the project's default language |
 | [English homepage](https://nightflight.xelope.fun/en) | Introduction and star-flight navigation in English |
-| [Open the observatory](https://nightflight.xelope.fun/observe?lang=en) | Full-screen sky and observing tools, with an English / 中文 switch |
+| [Open the observatory](https://nightflight.xelope.fun/observe?lang=en) | Full-screen sky and observing tools, with an English / Chinese switch |
 | [Alternative address](https://galactic-sky-physics.blush-eel-3740.chatgpt.site/) | The same website at its original hosting address |
 
 The website is publicly accessible. No installation is required.
 
 ## Interface in action
 
-The observatory supports English and Chinese. Switch language at the top right without resetting your viewpoint, position or simulation time. The operation demonstrations below are recorded in the English interface; older atmosphere and nebula screenshots retain their original Chinese labels.
+The observatory supports English and Chinese. Switch language at the top right without resetting your viewpoint, position or simulation time. The screenshots and operation demonstrations below use the English interface.
 
 The website’s Getting started section includes recorded demonstrations. Only the visible, selected demo plays, with a still-image option: [Look around](public/guide/en/look.gif) · [Change position](public/guide/en/move.gif) · [Find an object](public/guide/en/inspect.gif).
 
@@ -57,9 +55,9 @@ Open “Position” at the bottom and choose “Inner galaxy”. The screenshot 
 
 ### Adjust atmosphere and display brightness
 
-Open “观察” and scroll to “显示曝光” (Display exposure) and “行星大气” (Planetary atmosphere). Adjust display brightness, choose space, clear sky or haze, and set the horizon tilt. Twilight controls are further down the panel.
+Open “View” and scroll to “Display exposure” and “Planetary atmosphere”. Adjust display brightness, choose space, clear sky or haze, and set the horizon tilt. Twilight controls are further down the panel.
 
-[![Observation settings: display-exposure slider, three atmosphere options and horizon tilt](docs/images/atmosphere.jpg)](docs/images/atmosphere.jpg)
+[![Observation settings: display-exposure slider, three atmosphere options and horizon tilt](docs/images/en/atmosphere.jpg)](docs/images/en/atmosphere.jpg)
 
 ### Search for a star and inspect its data
 
@@ -71,7 +69,7 @@ Select “Search objects” on the left and enter “Sirius”. Choosing the res
     <td width="50%"><strong>Locate it and inspect its data</strong></td>
   </tr>
   <tr>
-    <td><a href="docs/images/object-search.jpg"><img src="docs/images/object-search.jpg" width="480" alt="Searching for Sirius by its Chinese name returns its catalogue identity" /></a></td>
+    <td><a href="docs/images/en/object-search.jpg"><img src="docs/images/en/object-search.jpg" width="480" alt="Searching for Sirius by its English name returns its catalogue identity" /></a></td>
     <td><a href="public/guide/en/star-details.jpg"><img src="public/guide/en/star-details.jpg" width="480" alt="Sirius selected with observed catalogue data and current distance in the side panel" /></a></td>
   </tr>
 </table>
@@ -80,9 +78,9 @@ Click either image to read it at full size. Search also accepts English names an
 
 ### Explore a nebula and its image source
 
-In “观察”, choose “猎户座大星云 · 特写” (Orion Nebula close-up). The camera view opens with the object's distance, alternative names and a link to the original image. Catalogue targets also include star clusters and galaxies.
+In “View”, choose “Orion Nebula · Close-up”. The camera view opens with the object's distance, alternative names and a link to the original image. Catalogue targets also include star clusters and galaxies.
 
-[![Orion Nebula camera close-up with object distances and photographic source information](docs/images/nebula-details.jpg)](docs/images/nebula-details.jpg)
+[![Orion Nebula camera close-up with English object description and distances](docs/images/en/nebula-details.jpg)](docs/images/en/nebula-details.jpg)
 
 <sub>Nebula imagery in the screenshot: © ESO/G. Beccari · <a href="https://www.eso.org/public/images/eso1723a/">Original photograph</a> · Creative Commons Attribution 4.0 (CC BY 4.0). Photographic colours in the camera close-up do not represent naked-eye vision.</sub>
 
@@ -110,12 +108,12 @@ Scrolling and navigation on the homepage drive a continuous star-flight scene. M
 
 | Preset / interface label | What to explore |
 | --- | --- |
-| **Solar neighbourhood / 太阳邻域** | Begin with a familiar sky; search and inspect observed stars. |
-| **Inner galaxy / 内银河** | Move inward and compare the directions and brightness of nearby stars. |
-| **Near the bulge / 核球附近** | Look into the central region from slightly above the plane. |
-| **Outer disc / 外盘深处** | Look back from the outskirts and compare foreground stars with integrated light. |
-| **Above the plane / 盘面上方** | Leave the disc and examine the galactic band's shape and dust obscuration. |
-| **Far side / 银河对侧** | Observe from the opposite side of the Sun's galactic position. |
+| **Solar neighbourhood** | Begin with a familiar sky; search and inspect observed stars. |
+| **Inner galaxy** | Move inward and compare the directions and brightness of nearby stars. |
+| **Near the bulge** | Look into the central region from slightly above the plane. |
+| **Outer disc** | Look back from the outskirts and compare foreground stars with integrated light. |
+| **Above the disc** | Leave the disc and examine the galactic band's shape and dust obscuration. |
+| **Far side** | Observe from the opposite side of the Sun's galactic position. |
 
 These presets define galactic coordinates. The planetary terrain is a hypothetical observing environment.
 
@@ -129,8 +127,8 @@ These presets define galactic coordinates. The planetary terrain is a hypothetic
 | `/` | Open object search |
 | `Esc` | Close search or object selection |
 | Arrow keys, `+` / `-` | Turn or zoom while the sky canvas has focus |
-| “锁定中心” | Track the galactic centre during travel or time playback |
-| “新手教程” | Reopen the tutorial; completion is saved in the current browser |
+| “Track centre” | Track the galactic centre during travel or time playback |
+| “Tutorial” | Reopen the tutorial; completion is saved in the current browser |
 
 Turn off centre lock to look freely. If you cannot find an object, check whether it is in the loaded catalogue and above the current horizon.
 
@@ -248,6 +246,6 @@ Third-party catalogues, photographs and dependencies retain their own licenses. 
 
 **[Start observing ↗](https://nightflight.xelope.fun/observe?lang=en)**
 
-[中文](README.md) · [English](README.en.md)
+[Chinese](README.md) · [English](README.en.md)
 
 </div>
