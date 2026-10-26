@@ -8,11 +8,12 @@ import type { GalaxyColourGrade } from "./galaxy-radiance.ts";
 import type { GalacticFieldCache } from "./galaxy-field-cache.ts";
 import type { SkyComputeResult } from "./sky-compute.worker.ts";
 import { galaxyVolumeShader } from "./galaxy-volume-shader.ts";
+import { createGalaxyRefinementDetail, GALAXY_REFINEMENT_FADE_MS, GALAXY_REFINEMENT_LOG_LIMIT } from "./galaxy-refinement.ts";
 
 const vertexSource=`attribute vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}`;
 const fragmentSource=`precision highp float;
 uniform sampler2D sky;
-uniform sampler2D coarseSky;
+uniform sampler2D detailSky;
 uniform float refinementWeight;
 uniform vec2 resolution;
 uniform vec3 lensDirection;
@@ -38,9 +39,12 @@ void main(){
   vec3 colour;
   if(fieldReady>0.5){
     colour=cachedGalaxy(sampledDirection);
-    // A residual adds detail without replacing the sharp, current-view volume
-    // with an enlarged all-sky image. It fades with distance from its own origin.
-    if(refinementWeight>0.0)colour+=refinementWeight*(texture2D(sky,uv).rgb-texture2D(coarseSky,uv).rgb);
+    // Refine local dust contrast while preserving the moving volume's colour
+    // and broad brightness. Adding an RGB residual used to shift both at rest.
+    if(refinementWeight>0.0){
+      vec2 detail=texture2D(detailSky,uv).rg;
+      colour*=exp(refinementWeight*(detail.r-detail.g)*${GALAXY_REFINEMENT_LOG_LIMIT.toFixed(12)});
+    }
     colour=clamp(colour,0.0,1.0);
   }else colour=texture2D(sky,uv).rgb;
   colour=pow(min(vec3(1.0),pow(colour,vec3(2.2))*pow(2.0,exposure)),vec3(1.0/2.2));
@@ -89,11 +93,11 @@ export function createSkyBackgroundGpuRenderer(canvas:HTMLCanvasElement):SkyBack
   gl.useProgram(program);
   const buffer=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   const attribute=gl.getAttribLocation(program,"position");gl.enableVertexAttribArray(attribute);gl.vertexAttribPointer(attribute,2,gl.FLOAT,false,0,0);
-  const uniforms=Object.fromEntries(["lensDirection","lensDistance","lensStrength","lensShadow","sky","coarseSky","fieldAtlas","fieldReady","observation","immersive","observerPosition","refinementWeight","resolution","forward","cameraRight","cameraUp","zenith","sun","tangentHalfFov","exposure","atmosphere","infrared","sunAltitude","daylightPenalty"].map(name=>[name,gl.getUniformLocation(program,name)]));
+  const uniforms=Object.fromEntries(["lensDirection","lensDistance","lensStrength","lensShadow","sky","detailSky","fieldAtlas","fieldReady","observation","immersive","observerPosition","refinementWeight","resolution","forward","cameraRight","cameraUp","zenith","sun","tangentHalfFov","exposure","atmosphere","infrared","sunAltitude","daylightPenalty"].map(name=>[name,gl.getUniformLocation(program,name)]));
   const texture=gl.createTexture()!;gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.uniform1i(uniforms.sky,0);
-  const fieldTexture=gl.createTexture()!,coarseTexture=gl.createTexture()!;
+  const fieldTexture=gl.createTexture()!,detailTexture=gl.createTexture()!;
   const upload=(target:WebGLTexture,unit:number,data:Uint8Array|Uint8ClampedArray,width:number,height:number)=>{
     gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,target);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
@@ -101,15 +105,15 @@ export function createSkyBackgroundGpuRenderer(canvas:HTMLCanvasElement):SkyBack
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,data);
   };
   // All sampler units must be complete even before the asynchronous cache arrives.
-  for(const [target,unit] of [[texture,0],[fieldTexture,1],[coarseTexture,2]] as const)upload(target,unit,new Uint8Array([0,0,0,255]),1,1);
-  gl.uniform1i(uniforms.fieldAtlas,1);gl.uniform1i(uniforms.coarseSky,2);
+  for(const [target,unit] of [[texture,0],[fieldTexture,1],[detailTexture,2]] as const)upload(target,unit,new Uint8Array([0,0,0,255]),1,1);
+  gl.uniform1i(uniforms.fieldAtlas,1);gl.uniform1i(uniforms.detailSky,2);
   let loaded=false,fieldLoaded=false,refinement:SkyComputeResult|null=null,refinementStarted=0;
   let captureProgram:WebGLProgram|null=null;
   let frame:number|null=null,lastArgs:Parameters<SkyBackgroundGpuRenderer["render"]>|null=null;
   const animate=()=>{
     frame=null;
     if(lastArgs)renderer.render(...lastArgs);
-    if(performance.now()-refinementStarted<300)frame=requestAnimationFrame(animate);
+    if(performance.now()-refinementStarted<GALAXY_REFINEMENT_FADE_MS)frame=requestAnimationFrame(animate);
   };
   const renderer:SkyBackgroundGpuRenderer={
     setFieldCache(cache){
@@ -160,7 +164,7 @@ export function createSkyBackgroundGpuRenderer(canvas:HTMLCanvasElement):SkyBack
     setSky(result){
       upload(texture,0,result.pixels,result.width,result.height);loaded=true;
       refinement=result.coarsePixels?result:null;
-      if(result.coarsePixels)upload(coarseTexture,2,result.coarsePixels,result.width,result.height);
+      if(result.coarsePixels)upload(detailTexture,2,createGalaxyRefinementDetail(result.pixels,result.coarsePixels,result.width,result.height),result.width,result.height);
       refinementStarted=performance.now();
       if(frame===null)frame=requestAnimationFrame(animate);
     },
@@ -180,7 +184,8 @@ export function createSkyBackgroundGpuRenderer(canvas:HTMLCanvasElement):SkyBack
       const distance=refinement?Math.hypot(position.x-refinement.position.x,position.y-refinement.position.y,4*(position.z-refinement.position.z)):Infinity;
       const relativeDistance=Math.min(1,distance/120);
       const proximity=1-relativeDistance*relativeDistance*(3-2*relativeDistance);
-      const weight=refinement?.mode===mode&&refinement.grade===grade?proximity*Math.min(1,(performance.now()-refinementStarted)/300):0;
+      const progress=Math.min(1,(performance.now()-refinementStarted)/GALAXY_REFINEMENT_FADE_MS);
+      const weight=refinement?.mode===mode&&refinement.grade===grade?proximity*progress*progress*(3-2*progress):0;
       gl.uniform1f(uniforms.refinementWeight,weight);
       gl.uniform3f(uniforms.lensDirection,lens?.direction.x??0,lens?.direction.y??0,lens?.direction.z??1);
       gl.uniform1f(uniforms.lensDistance,lens?.distance??0);gl.uniform1f(uniforms.lensStrength,lens?.strength??0);gl.uniform1f(uniforms.lensShadow,lens?.shadowAngle??0);
@@ -192,7 +197,7 @@ export function createSkyBackgroundGpuRenderer(canvas:HTMLCanvasElement):SkyBack
       gl.uniform1f(uniforms.daylightPenalty,daylightVisibilityPenaltyMagnitude(sunAltitude,atmosphere));
       gl.drawArrays(gl.TRIANGLES,0,6);return true;
     },
-    dispose(){if(frame!==null)cancelAnimationFrame(frame);gl.deleteTexture(texture);gl.deleteTexture(fieldTexture);gl.deleteTexture(coarseTexture);gl.deleteBuffer(buffer);gl.deleteProgram(program);if(captureProgram)gl.deleteProgram(captureProgram);},
+    dispose(){if(frame!==null)cancelAnimationFrame(frame);gl.deleteTexture(texture);gl.deleteTexture(fieldTexture);gl.deleteTexture(detailTexture);gl.deleteBuffer(buffer);gl.deleteProgram(program);if(captureProgram)gl.deleteProgram(captureProgram);},
   };
   return renderer;
 }
