@@ -174,7 +174,7 @@
   "逐视线积分；波长相关红化": "Line-of-sight integration and wavelength-dependent reddening",
   "核验层不接入": "Not used in the test layer",
   "未分辨星光": "Unresolved starlight",
-  "96 段发光与吸收联合积分": "Joint emission and absorption integration over 96 segments",
+  "发光与吸收联合积分；中心核区加密": "Joint emission and absorption integration with finer nuclear sampling",
   "核验层不注入": "Not added to the test layer",
   "运动": "Motion",
   "Gaia 实测速度与族群初态传播；观察者跃蛙积分": "Gaia measured velocities and population initial states; leapfrog integration for the observer",

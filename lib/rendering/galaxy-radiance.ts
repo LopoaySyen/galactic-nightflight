@@ -6,8 +6,9 @@ import { createCameraBasis } from "./projection.ts";
 const SOLAR_RADIUS_PARSEC = 8_277;
 export const BAR_ANGLE_RADIANS = (27 * Math.PI) / 180;
 const VISUAL_EXTINCTION_PER_PARSEC_AT_SOLAR_MIDPLANE = 0.00072;
-const RAY_LENGTH_PARSEC = 32_000;
-const RADIANCE_SEGMENTS = 96;
+export const RAY_LENGTH_PARSEC = 32_000;
+export const RADIANCE_SEGMENTS = 96;
+export const NUCLEAR_RADIANCE_SEGMENTS = 48;
 const rayDistanceEnds=Float64Array.from({length:RADIANCE_SEGMENTS},(_,i)=>RAY_LENGTH_PARSEC*((i+1)/RADIANCE_SEGMENTS)**1.52);
 
 export type GalaxyColourGrade = "observational" | "immersive";
@@ -214,11 +215,35 @@ export function integrateGalaxyRadiance(
   const verticalWeight=clamp((Math.abs(unitDirection.z)*RAY_LENGTH_PARSEC-500)/1000,0,1);
   const verticalStart=Math.asinh(observerPositionParsec.z/200);
   const verticalEnd=Math.asinh((observerPositionParsec.z+unitDirection.z*RAY_LENGTH_PARSEC)/200);
-
-  for (let index = 0; index < RADIANCE_SEGMENTS; index += 1) {
+  const discDistanceEnd = (index: number) => {
+    if (index >= RADIANCE_SEGMENTS) return RAY_LENGTH_PARSEC;
     const normalizedEnd = (index + 1) / RADIANCE_SEGMENTS;
     const verticalDistance=verticalWeight>0?(200*Math.sinh(verticalStart+(verticalEnd-verticalStart)*normalizedEnd)-observerPositionParsec.z)/unitDirection.z:0;
-    const distanceEndParsec = rayDistanceEnds[index]*(1-verticalWeight)+verticalDistance*verticalWeight;
+    return rayDistanceEnds[index]*(1-verticalWeight)+verticalDistance*verticalWeight;
+  };
+  // The 7.5 pc nuclear cluster is much narrower than the disc grid. Merge an
+  // independent grid around the ray's closest approach; blending the two grids
+  // would move samples away from the core and recreate the bright latitude bands.
+  const closest = -(observerPositionParsec.x * unitDirection.x +
+    observerPositionParsec.y * unitDirection.y + observerPositionParsec.z * unitDirection.z);
+  const impact = Math.hypot(observerPositionParsec.x + closest * unitDirection.x,
+    observerPositionParsec.y + closest * unitDirection.y, observerPositionParsec.z + closest * unitDirection.z);
+  const closestOnRay = clamp(closest, 0, RAY_LENGTH_PARSEC);
+  const nuclearVisible = Math.hypot(impact, closest - closestOnRay) < 1500;
+  const nuclearScale = Math.hypot(impact, 7.5);
+  const nuclearStart = Math.asinh(-closest / nuclearScale);
+  const nuclearSpan = Math.asinh((RAY_LENGTH_PARSEC - closest) / nuclearScale) - nuclearStart;
+  const nuclearDistanceEnd = (index: number) => !nuclearVisible || index >= NUCLEAR_RADIANCE_SEGMENTS - 1
+    ? RAY_LENGTH_PARSEC
+    : clamp(closest + nuclearScale * Math.sinh(nuclearStart + nuclearSpan * (index + 1) / NUCLEAR_RADIANCE_SEGMENTS), 0, RAY_LENGTH_PARSEC);
+  let discIndex = 0, nuclearIndex = 0;
+  let discEnd = discDistanceEnd(discIndex), nuclearEnd = nuclearDistanceEnd(nuclearIndex);
+
+  for (let index = 0; index < RADIANCE_SEGMENTS + NUCLEAR_RADIANCE_SEGMENTS; index += 1) {
+    if (previousDistanceParsec >= RAY_LENGTH_PARSEC) break;
+    const distanceEndParsec = Math.min(discEnd, nuclearEnd);
+    if (discEnd <= distanceEndParsec) discEnd = discDistanceEnd(++discIndex);
+    if (nuclearEnd <= distanceEndParsec) nuclearEnd = nuclearDistanceEnd(++nuclearIndex);
     const stepParsec = distanceEndParsec - previousDistanceParsec;
     const distanceMidpointParsec = previousDistanceParsec + stepParsec / 2;
     previousDistanceParsec = distanceEndParsec;

@@ -1,4 +1,5 @@
 import { GALAXY_FIELD_CACHE as cache } from "./galaxy-field-cache.ts";
+import { NUCLEAR_RADIANCE_SEGMENTS, RADIANCE_SEGMENTS, RAY_LENGTH_PARSEC } from "./galaxy-radiance.ts";
 
 // The atlas stores a fixed Galactic volume, never a screenshot from a viewpoint.
 // Keep transfer, ray steps and display response aligned with galaxy-radiance.ts.
@@ -20,21 +21,52 @@ vec4 cachedField(vec3 p) {
   vec4 encoded = mix(atlasSlice(xy, lo), atlasSlice(xy, lo + 1.0), z - lo);
   return (exp(encoded * fieldLogRange) - 1.0) * fieldScale;
 }
+float rayAsinh(float value) {
+  return sign(value) * log(abs(value) + sqrt(value * value + 1.0));
+}
+float discRayEnd(float index, float verticalWeight, float startQ, float endQ, float dz) {
+  if (index >= ${RADIANCE_SEGMENTS.toFixed(1)}) return ${RAY_LENGTH_PARSEC.toFixed(1)};
+  float u = (index + 1.0) / ${RADIANCE_SEGMENTS.toFixed(1)};
+  float distanceEnd = ${RAY_LENGTH_PARSEC.toFixed(1)} * pow(u, 1.52);
+  if (verticalWeight > 0.0) {
+    float q = mix(startQ, endQ, u);
+    float verticalDistance = (100.0 * (exp(q) - exp(-q)) - observerPosition.z) / dz;
+    distanceEnd = mix(distanceEnd, verticalDistance, verticalWeight);
+  }
+  return distanceEnd;
+}
+float nuclearRayEnd(float index, bool visible, float closest, float scale, float startQ, float span) {
+  if (!visible || index >= ${(NUCLEAR_RADIANCE_SEGMENTS - 1).toFixed(1)}) return ${RAY_LENGTH_PARSEC.toFixed(1)};
+  float q = startQ + span * (index + 1.0) / ${NUCLEAR_RADIANCE_SEGMENTS.toFixed(1)};
+  return clamp(closest + scale * 0.5 * (exp(q) - exp(-q)), 0.0, ${RAY_LENGTH_PARSEC.toFixed(1)});
+}
 vec3 cachedGalaxy(vec3 direction) {
   vec3 radiance = vec3(0.0), opticalDepth = vec3(0.0);
   vec3 absorption = observation > 2.5 ? vec3(0.16,0.26,0.43) : vec3(0.76,1.0,1.32);
   float previousDistance = 0.0;
   float verticalWeight=clamp((abs(direction.z)*32000.0-500.0)/1000.0,0.0,1.0);
   float startZ=observerPosition.z/200.0,endZ=(observerPosition.z+direction.z*32000.0)/200.0;
-  float startQ=sign(startZ)*log(abs(startZ)+sqrt(startZ*startZ+1.0));
-  float endQ=sign(endZ)*log(abs(endZ)+sqrt(endZ*endZ+1.0));
-  for (int i = 0; i < 96; i++) {
-    float u=float(i+1)/96.0;
-    float distanceEnd = 32000.0 * pow(u, 1.52);
-    if(verticalWeight>0.0){
-      float q=mix(startQ,endQ,u);
-      float verticalDistance=(100.0*(exp(q)-exp(-q))-observerPosition.z)/direction.z;
-      distanceEnd=mix(distanceEnd,verticalDistance,verticalWeight);
+  float startQ=rayAsinh(startZ), endQ=rayAsinh(endZ);
+  float closest = -dot(observerPosition, direction);
+  float impact = length(observerPosition + closest * direction);
+  float closestOffset = closest - clamp(closest, 0.0, ${RAY_LENGTH_PARSEC.toFixed(1)});
+  bool nuclearVisible = length(vec2(impact, closestOffset)) < 1500.0;
+  float nuclearScale = length(vec2(impact, 7.5));
+  float nuclearStart = rayAsinh(-closest / nuclearScale);
+  float nuclearSpan = rayAsinh((${RAY_LENGTH_PARSEC.toFixed(1)} - closest) / nuclearScale) - nuclearStart;
+  float discIndex = 0.0, nuclearIndex = 0.0;
+  float discEnd = discRayEnd(discIndex, verticalWeight, startQ, endQ, direction.z);
+  float nuclearEnd = nuclearRayEnd(nuclearIndex, nuclearVisible, closest, nuclearScale, nuclearStart, nuclearSpan);
+  for (int i = 0; i < ${RADIANCE_SEGMENTS + NUCLEAR_RADIANCE_SEGMENTS}; i++) {
+    if (previousDistance >= ${RAY_LENGTH_PARSEC.toFixed(1)}) break;
+    float distanceEnd = min(discEnd, nuclearEnd);
+    if (discEnd <= distanceEnd) {
+      discIndex += 1.0;
+      discEnd = discRayEnd(discIndex, verticalWeight, startQ, endQ, direction.z);
+    }
+    if (nuclearEnd <= distanceEnd) {
+      nuclearIndex += 1.0;
+      nuclearEnd = nuclearRayEnd(nuclearIndex, nuclearVisible, closest, nuclearScale, nuclearStart, nuclearSpan);
     }
     float stepLength = distanceEnd - previousDistance;
     vec3 p = observerPosition + direction * (previousDistance + stepLength * 0.5);
