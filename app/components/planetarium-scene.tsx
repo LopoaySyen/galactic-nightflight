@@ -62,6 +62,8 @@ import { stellarScintillation, starScintillationPhase } from "@/lib/rendering/st
 import { createSkyBackgroundGpuRenderer, type SkyBackgroundGpuRenderer } from "@/lib/rendering/sky-background-gpu";
 import { resolveQuickView } from "@/lib/rendering/quick-view";
 import { useSkyComputation } from "./use-sky-computation";
+import type { SkyComputeRequest } from "@/lib/rendering/sky-compute.worker";
+import { loadGalacticFieldCache, type GalacticFieldCache } from "@/lib/rendering/galaxy-field-cache";
 import { blendDeepSkyPhoto } from "@/lib/rendering/deep-sky-composite";
 import { StarDetail } from "./star-detail";
 import {SunDetail} from './sun-detail';
@@ -307,14 +309,17 @@ function PlanetariumView() {
   });
   const [isMapDragging, setIsMapDragging] = useState(false);
   const [isPositionScrubbing, setIsPositionScrubbing] = useState(false);
+  const [galacticFieldCache,setGalacticFieldCache]=useState<GalacticFieldCache|null>(null);
   const observedStars = useMemo(() => includeNearbyStars([...observedBrightStars, ...gaiaBrightStars]), [observedBrightStars, gaiaBrightStars]);
   const galaxyPointSources = useMemo(
     () => [...observedRenderingAnchors(observedStars, selectedStarId).filter(source=>!earthActive||source.id!=='sun'), ...modelPopulationEmitters],
     [observedStars, selectedStarId,earthActive],
   );
+  const captureCoarseSky=useCallback((request:SkyComputeRequest)=>backgroundGpuRef.current?.captureCoarseSky(request.position,request.mode,request.grade,request.width)??null,[]);
   const { result: skyComputation, points: skyPoints, state: computeState } = useSkyComputation(
     galaxyPointSources, observerPositionParsec, simulationTimeYears, observationMode,
     galaxyColourGrade, isMapDragging || isPositionScrubbing || isTimePlaying,
+    galacticFieldCache,captureCoarseSky,
   );
   const preparedGalaxyPointSources = useMemo(()=>earthActive?skyPoints?.sources.filter(source=>source.id!=='sun'):skyPoints?.sources,[skyPoints,earthActive]);
   const preparedExtragalacticSources = skyPoints?.galaxies;
@@ -361,7 +366,11 @@ function PlanetariumView() {
     allSkyStarsGpuRef.current=createStarGpuRenderer(allSkyStarsRef.current);
     if (starCanvasRef.current) starsGpuRef.current = createStarGpuRenderer(starCanvasRef.current);
     if (skyBackgroundRef.current) backgroundGpuRef.current = createSkyBackgroundGpuRenderer(skyBackgroundRef.current);
-    return () => { allSkyStarsGpuRef.current?.dispose();allSkyStarsGpuRef.current=null;allSkyStarsRef.current=null; compactGpuRef.current?.dispose();compactGpuRef.current=null; starsGpuRef.current?.dispose(); backgroundGpuRef.current?.dispose();
+    let cancelled=false;
+    if(backgroundGpuRef.current)void loadGalacticFieldCache().then(cache=>{
+      if(!cancelled&&backgroundGpuRef.current?.setFieldCache(cache))setGalacticFieldCache(cache);
+    }).catch(error=>console.warn("Galactic volume cache unavailable; using the worker sky.",error));
+    return () => { cancelled=true;allSkyStarsGpuRef.current?.dispose();allSkyStarsGpuRef.current=null;allSkyStarsRef.current=null; compactGpuRef.current?.dispose();compactGpuRef.current=null; starsGpuRef.current?.dispose(); backgroundGpuRef.current?.dispose();
       starsGpuRef.current = null; backgroundGpuRef.current = null; uploadedSourcesRef.current = undefined; uploadedBackgroundRef.current = null; };
   }, []);
 
@@ -661,7 +670,7 @@ function PlanetariumView() {
   const drawSky = useCallback(() => {
     // Show every layer from the same completed observer position while the next
     // dust integral is pending. Never combine an old dust sky with new parallax.
-    const displayPosition=(earthActive||nearFollowRef.current)?observerPositionParsec:compactViewObserver(observerPositionParsec,skyComputation?.position,liveCompactObjects);
+    const displayPosition=(galacticFieldCache||earthActive||nearFollowRef.current)?observerPositionParsec:compactViewObserver(observerPositionParsec,skyComputation?.position,liveCompactObjects);
     const displayLens=liveCompactObjects.map(object=>lensView(object,displayPosition)).filter(view=>view!==null).sort((a,b)=>b.strength-a.strength)[0]??null;
     const artisticCloseUp=blackHoleArtistic&&atmospherePreset==='space'&&!!displayLens&&displayLens.distance<1&&2/displayLens.strength>=65&&2/displayLens.strength<=1e6;
     if(displayLens)displayLens.discEdgeFade=artisticCloseUp;
@@ -696,14 +705,16 @@ function PlanetariumView() {
 
     const backgroundGpu = backgroundGpuRef.current;
     if (skyComputation && backgroundGpu && uploadedBackgroundRef.current !== skyComputation.pixels) {
-      backgroundGpu.setSky(skyComputation.pixels, skyComputation.width, skyComputation.height);
+      backgroundGpu.setSky(skyComputation);
       compactGpuRef.current?.setSky(skyComputation.pixels,skyComputation.width,skyComputation.height);
       uploadedBackgroundRef.current = skyComputation.pixels;
     }
-    const backgroundWidth = Math.min(width,1600);
+    // Keep a constant view resolution during travel; stars retain their own
+    // full-resolution layer. No 64/128px panorama is enlarged into this view.
+    const backgroundWidth = Math.min(width,galacticFieldCache?800:1600);
     const backgroundHeight = Math.max(1,Math.round(backgroundWidth*height/width));
     const backgroundOnGpu = scope === "galaxy-prediction" && !!backgroundGpu?.render(camera, backgroundWidth, backgroundHeight,
-      atmosphereZenith, sunDirection, sunAltitudeDegrees, atmospherePreset, observationMode, backgroundExposure, displayLens);
+      atmosphereZenith, sunDirection, sunAltitudeDegrees, atmospherePreset, observationMode, backgroundExposure, displayLens,displayPosition,galaxyColourGrade);
     if (skyBackgroundRef.current) skyBackgroundRef.current.style.visibility = backgroundOnGpu ? "visible" : "hidden";
     const starsGpu = starsGpuRef.current;
     if (preparedGalaxyPointSources && starsGpu && uploadedSourcesRef.current !== preparedGalaxyPointSources) {
@@ -1218,7 +1229,7 @@ function PlanetariumView() {
         context.drawImage(projectionCanvas, 0, 0, width, height);
       }
     }
-  }, [earthSettings,earthView,earthActive,atmospherePreset, atmosphereZenith, camera, displayExposureStops, planetInclinationDegrees, simulationTimeYears, skyComputation, skyPoints, deepSkyAssetVersion, drawCurve, enhanceDeepSkyScale, galaxyColourGrade, isSkyDragging, observationMode, observerPositionParsec, planetTerrainAssetVersion, preparedExtragalacticSources, preparedGalaxyPointSources, namedPreparedStars, selectedStar, selectedDeepSky, selectedCompact, scope, showBenchmarkLabels, showDeepSkyImages, showCoordinateGrid, showExtragalactic, showGalacticPlane, sunAltitudeDegrees, sunDirection, language, t, scintillationActive, blackHoleAccretionLog, blackHoleBolometric, blackHoleArtistic, blackHoleSkyExposure, liveCompactObjects]);
+  }, [galacticFieldCache,earthSettings,earthView,earthActive,atmospherePreset, atmosphereZenith, camera, displayExposureStops, planetInclinationDegrees, simulationTimeYears, skyComputation, skyPoints, deepSkyAssetVersion, drawCurve, enhanceDeepSkyScale, galaxyColourGrade, isSkyDragging, observationMode, observerPositionParsec, planetTerrainAssetVersion, preparedExtragalacticSources, preparedGalaxyPointSources, namedPreparedStars, selectedStar, selectedDeepSky, selectedCompact, scope, showBenchmarkLabels, showDeepSkyImages, showCoordinateGrid, showExtragalactic, showGalacticPlane, sunAltitudeDegrees, sunDirection, language, t, scintillationActive, blackHoleAccretionLog, blackHoleBolometric, blackHoleArtistic, blackHoleSkyExposure, liveCompactObjects]);
 
   const scheduleDraw = useCallback(() => {
     if (drawRequestRef.current !== null) return;
@@ -1461,7 +1472,7 @@ function PlanetariumView() {
                 setSelectedStarId('sun');setSelectedDeepSkyId(null);setSelectedCompactId(null);setActivePanel(null);setSearchOpen(false);setNavigationNotice('');return;
               }
             }
-            const displayedPosition=(earthActive||nearFollowRef.current)?observerPositionParsec:compactViewObserver(observerPositionParsec,skyComputation?.position,liveCompactObjects);
+            const displayedPosition=(galacticFieldCache||earthActive||nearFollowRef.current)?observerPositionParsec:compactViewObserver(observerPositionParsec,skyComputation?.position,liveCompactObjects);
             const displayedLens=liveCompactObjects.map(object=>lensView(object,displayedPosition)).filter(view=>view!==null).sort((a,b)=>b.strength-a.strength)[0]??null;
             if(displayedLens)displayedLens.discEdgeFade=blackHoleArtistic&&atmospherePreset==='space';
             const resolved=atmospherePreset==='space'&&compactGpuRef.current?nearestResolvedCompact(liveCompactObjects,displayedPosition,camera,rect.width,rect.height):undefined;
@@ -1524,7 +1535,7 @@ function PlanetariumView() {
         {minimalInterface ? t("显示控制") : t("沉浸观察")}
       </button></div>
       <ObservationMusic position={observerPositionParsec} />
-      <div className="compute-status" role="status">{t(renderError) || (computeState === "failed" ? t("背景计算暂不可用，请刷新重试") : computeState === "updating" ? t("正在更新星光与尘埃…") : "")}</div>
+      <div className="compute-status" role="status">{t(renderError) || (computeState === "failed" ? t("背景计算暂不可用，请刷新重试") : computeState === "updating" ? (galacticFieldCache ? (isMapDragging || isPositionScrubbing || isTimePlaying ? "" : t("正在补充星空细节…")) : t("正在更新星光与尘埃…")) : "")}</div>
       {navigationNotice && <div className="navigation-notice" role="status">{t(navigationNotice)}<button onClick={() => setNavigationNotice("")} type="button" aria-label={t("关闭视角提示")}>×</button></div>}
       <header className="planetarium-topbar">
         <div className="planetarium-brand">
@@ -1663,7 +1674,7 @@ function PlanetariumView() {
               <circle cx={observerMapPoint.x} cy={observerMapPoint.y} r="7" className="mini-observer-halo" />
               <circle cx={observerMapPoint.x} cy={observerMapPoint.y} r="3.7" className="mini-observer" />
             </svg>
-            <label className="planetarium-range radius-range"><span><b>{t("银河中心距离")}</b><output>{formatParsec(radiusParsec)}{t(" 秒差距")}</output></span><input type="range" min="0" max="1" step="0.00001" value={sliderFromRadius(radiusParsec)} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setIsPositionScrubbing(true); }} onPointerUp={() => setIsPositionScrubbing(false)} onBlur={() => setIsPositionScrubbing(false)} onPointerCancel={() => setIsPositionScrubbing(false)} onChange={(event) => relocateObserver(updateRadiusPreservingAzimuth(observerPositionParsec, radiusFromSlider(Number(event.target.value)), positionAzimuthDegrees))} /><small>{t("保持当前银河方位不变，沿银河中心与观察者连线连续移动。恒星方向与距离随滑杆实时变化，尘埃和银河背景在后台更新；探针重新定位会把模拟时间归零。")}</small></label>
+            <label className="planetarium-range radius-range"><span><b>{t("银河中心距离")}</b><output>{formatParsec(radiusParsec)}{t(" 秒差距")}</output></span><input type="range" min="0" max="1" step="0.00001" value={sliderFromRadius(radiusParsec)} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setIsPositionScrubbing(true); }} onPointerUp={() => setIsPositionScrubbing(false)} onBlur={() => setIsPositionScrubbing(false)} onPointerCancel={() => setIsPositionScrubbing(false)} onChange={(event) => relocateObserver(updateRadiusPreservingAzimuth(observerPositionParsec, radiusFromSlider(Number(event.target.value)), positionAzimuthDegrees))} /><small>{t("保持当前银河方位不变，沿银河中心与观察者连线连续移动。恒星、尘埃和银河光带随位置连续变化，停下后继续补充细节；探针重新定位会把模拟时间归零。")}</small></label>
             <dl className="position-readout"><div><dt>{t("横向坐标")}</dt><dd>{formatParsec(observerPositionParsec.x)}{t(" 秒差距")}</dd></div><div><dt>{t("纵向坐标")}</dt><dd>{formatParsec(observerPositionParsec.y)}{t(" 秒差距")}</dd></div><div><dt>{t("垂直坐标")}</dt><dd>{formatParsec(observerPositionParsec.z)}{t(" 秒差距")}</dd></div><div><dt>{t("银河方位")}</dt><dd>{positionAzimuthDegrees.toFixed(2)}°</dd></div></dl>
             <p className="control-definition coordinate-definition">{t("银河方位表示观察者绕银河中心所处的角度，决定站在哪里；它与观察方位不同，后者只决定朝哪里看。单位为度。当前轨道速度为 ")}{observerSpeedKilometresPerSecond.toFixed(1)}{t(" 千米/秒，方向由三维速度分量共同决定。")}</p>
             <p className="control-definition coordinate-definition">{t("视点移动造成的方向变化称为视差：附近恒星会明显改写原有星座形状，遥远星系只会轻微移动。半人马座 A 是约 380 万秒差距外的星系，不是附近的半人马座恒星；从太阳位置向内移动约 3,200 秒差距时，它的方向变化通常不到约 0.05°。")}</p>

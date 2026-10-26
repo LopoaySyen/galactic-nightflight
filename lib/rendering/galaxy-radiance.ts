@@ -8,6 +8,7 @@ export const BAR_ANGLE_RADIANS = (27 * Math.PI) / 180;
 const VISUAL_EXTINCTION_PER_PARSEC_AT_SOLAR_MIDPLANE = 0.00072;
 const RAY_LENGTH_PARSEC = 32_000;
 const RADIANCE_SEGMENTS = 96;
+const rayDistanceEnds=Float64Array.from({length:RADIANCE_SEGMENTS},(_,i)=>RAY_LENGTH_PARSEC*((i+1)/RADIANCE_SEGMENTS)**1.52);
 
 export type GalaxyColourGrade = "observational" | "immersive";
 
@@ -18,6 +19,8 @@ export interface GalacticFieldSample {
   nuclearEmissivity: number;
   dustRelativeDensity: number;
 }
+
+export type GalacticFieldSampler = (positionParsec: Vector3) => GalacticFieldSample;
 
 export interface GalaxyRadianceResult {
   red: number;
@@ -195,6 +198,7 @@ export function integrateGalaxyRadiance(
   observerPositionParsec: Vector3,
   unitDirection: Vector3,
   observationMode: ObservationMode = "dark-adapted",
+  sampleField: GalacticFieldSampler = sampleGalacticStellarAndDustField,
 ): GalaxyRadianceResult {
   let previousDistanceParsec = 0;
   let opticalDepthRed = 0;
@@ -204,9 +208,17 @@ export function integrateGalaxyRadiance(
   let radianceGreen = 0;
   let radianceBlue = 0;
 
+  // Rays crossing the thin disc need more samples near its midplane. Sampling
+  // uniformly in asinh(z/200) removes the concentric bands that a fixed distance
+  // grid creates above/below the disc. Blend continuously into the in-plane grid.
+  const verticalWeight=clamp((Math.abs(unitDirection.z)*RAY_LENGTH_PARSEC-500)/1000,0,1);
+  const verticalStart=Math.asinh(observerPositionParsec.z/200);
+  const verticalEnd=Math.asinh((observerPositionParsec.z+unitDirection.z*RAY_LENGTH_PARSEC)/200);
+
   for (let index = 0; index < RADIANCE_SEGMENTS; index += 1) {
     const normalizedEnd = (index + 1) / RADIANCE_SEGMENTS;
-    const distanceEndParsec = RAY_LENGTH_PARSEC * normalizedEnd ** 1.52;
+    const verticalDistance=verticalWeight>0?(200*Math.sinh(verticalStart+(verticalEnd-verticalStart)*normalizedEnd)-observerPositionParsec.z)/unitDirection.z:0;
+    const distanceEndParsec = rayDistanceEnds[index]*(1-verticalWeight)+verticalDistance*verticalWeight;
     const stepParsec = distanceEndParsec - previousDistanceParsec;
     const distanceMidpointParsec = previousDistanceParsec + stepParsec / 2;
     previousDistanceParsec = distanceEndParsec;
@@ -218,7 +230,7 @@ export function integrateGalaxyRadiance(
     if (Math.hypot(position.x, position.y) > 24_000 || Math.abs(position.z) > 8_000) {
       continue;
     }
-    const field = sampleGalacticStellarAndDustField(position);
+    const field = sampleField(position);
     const warmEmission = field.barBulgeEmissivity + field.nuclearEmissivity;
     // Young thin-disc light is bluer, the thick disc is warmer and the old
     // bar/bulge population is ivory rather than a uniform brown wash.
@@ -399,6 +411,7 @@ export function renderGalaxyAllSkyRadiancePixels(
   height: number,
   colourGrade: GalaxyColourGrade = "observational",
   rows?: { start: number; end: number; pixels: Uint8ClampedArray },
+  sampleField: GalacticFieldSampler = sampleGalacticStellarAndDustField,
 ): Uint8ClampedArray {
   const pixels = rows?.pixels ?? new Uint8ClampedArray(width * height * 4);
   const baseNight =
@@ -426,7 +439,7 @@ export function renderGalaxyAllSkyRadiancePixels(
         z: Math.sin(latitudeRadians),
       };
       const response = displayResponse(
-        integrateGalaxyRadiance(observerPositionParsec, direction, observationMode),
+        integrateGalaxyRadiance(observerPositionParsec, direction, observationMode, sampleField),
         observationMode,
         colourGrade,
       );

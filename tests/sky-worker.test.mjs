@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Worker } from 'node:worker_threads';
+import { readFile } from 'node:fs/promises';
+import { gunzipSync } from 'node:zlib';
 
 test('background sky computation returns transferable pixels and prepared catalogues', async () => {
   const moduleUrl = new URL('../lib/rendering/sky-compute.worker.ts', import.meta.url).href;
@@ -79,5 +81,47 @@ test('independent dust work returns a preview and can cancel obsolete fine detai
     assert.equal(messages[0].kind,'preview');assert.equal(messages[0].width,64);
     assert.equal(result.kind,'ack');assert.equal(result.width,0);
     assert.ok(!messages.some(message=>message.kind==='points'));
+  }finally{await worker.terminate();}
+});
+
+test('cached volume refines without blurry previews and restores a previous stop without recomputation', {timeout:15000}, async () => {
+  const moduleUrl=new URL('../lib/rendering/sky-compute.worker.ts',import.meta.url).href;
+  const worker=new Worker(`
+    const {parentPort}=require('node:worker_threads');
+    globalThis.self={postMessage(data,options){parentPort.postMessage(data,options?.transfer);}};
+    import(${JSON.stringify(moduleUrl)}).then(()=>parentPort.on('message',data=>self.onmessage({data})));
+  `,{eval:true});
+  const request=(data,cancelImmediately=false)=>new Promise((resolve,reject)=>{
+    const messages=[];
+    const receive=message=>{
+      messages.push(message);
+      if(['radiance','ack','failed'].includes(message.kind)){
+        worker.off('message',receive);worker.off('error',reject);resolve(messages);
+      }
+    };
+    worker.on('message',receive);worker.once('error',reject);worker.postMessage(data);
+    if(cancelImmediately)worker.postMessage({cancel:true});
+  });
+  try{
+    const fieldData=new Uint8Array(gunzipSync(await readFile(new URL('../public/data/galaxy-field-v1.bin.gz',import.meta.url))));
+    worker.postMessage({fieldData},[fieldData.buffer]);
+    const first={id:10,position:{x:-8277,y:0,z:0},timeYears:0,mode:'camera',grade:'observational',width:64,catalogueVersion:0,layer:'radiance'};
+    const a=await request(first);
+    assert.deepEqual(a.map(message=>message.kind),['radiance']);
+    assert.equal(a[0].coarsePixels.length,a[0].pixels.length);
+    assert.ok(a[0].pixels.some((value,index)=>value!==a[0].coarsePixels[index]),'refinement must restore dust structure');
+    const b=await request({...first,id:11,position:{x:-3500,y:400,z:60}});
+    assert.notDeepEqual(b[0].pixels,a[0].pixels,'relocating must change the sky');
+    // A real cache hit finishes before a following cancel. A new striped
+    // integral yields and must be cancelled; no fragile wall-clock threshold.
+    const restored=await request({...first,id:12},true);
+    assert.deepEqual(restored.map(message=>message.kind),['radiance']);
+    assert.deepEqual(restored[0].pixels,a[0].pixels);
+    assert.deepEqual(restored[0].coarsePixels,a[0].coarsePixels);
+    const infrared=await request({...first,id:13,mode:'near-infrared'});
+    assert.notDeepEqual(infrared[0].pixels,a[0].pixels,'spectral modes must not share a refined frame');
+    const cancelled=await request({...first,id:14,position:{x:8277,y:0,z:0},width:384},true);
+    assert.equal(cancelled.at(-1).kind,'ack');
+    assert.equal(cancelled.at(-1).width,0);
   }finally{await worker.terminate();}
 });
